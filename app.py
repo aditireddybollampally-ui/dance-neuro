@@ -729,7 +729,7 @@ if st.session_state.active_section == "studio":
                     st.rerun()
 
         st.divider()
-        user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user"] == st.session_state.user_email] # type: ignore
+        user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user") == st.session_state.user_email]
         
         events = [{"id": i["id"], "title": f"📹 {i['piece']}", "start": i["date"]} for i in user_choreo_items]
         cal_response = calendar(events=events, options=calendar_options, key="choreo_cal")
@@ -911,7 +911,7 @@ elif st.session_state.active_section == "stress":
                 breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
 # ==========================================
-# SECTION 3: AI RECOVERY (ROBUST GEOLOCATION & RELIABLE MAP STYLE)
+# SECTION 3: AI RECOVERY
 # ==========================================
 elif st.session_state.active_section == "pain":
     st.markdown("<h2>🧘 AI Recovery</h2>", unsafe_allow_html=True)
@@ -1117,7 +1117,6 @@ elif st.session_state.active_section == "pain":
         </div>
         """
 
-        # USING RELIABLE NATIVE CARTO ROAD/DARK STYLE THAT RENDERS CITIES & LABELS INSTANTLY
         r = pdk.Deck(
             layers=[circle_layer, text_layer],
             initial_view_state=view_state,
