@@ -2,3 +2,6 @@ streamlit
 pandas
 streamlit-calendar
 schedule
+pydeck
+requests
+streamlit-js-eval
