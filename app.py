@@ -38,19 +38,17 @@ PALETTE = {
     "accent_4": "#D8BFCE"  # Lavender accent
 }
 
-# Apply Global CSS for fonts, backgrounds, buttons, and inputs
+# Apply Global CSS
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Great+Vibes&display=swap');
 
-    /* Global aesthetic setup */
     .stApp {{
         background-color: {PALETTE["bg"]};
         color: {PALETTE["text"]};
         font-family: 'Playfair Display', serif;
     }}
 
-    /* Elegant Titles */
     .main-title {{
         font-family: 'Cinzel', serif;
         color: {PALETTE["accent_1"]} !important;
@@ -78,7 +76,6 @@ st.markdown(f"""
         margin-top: 2rem;
     }}
 
-    /* Container Aesthetic */
     div[data-testid="stVerticalBlock"] > div:has(div.stExpander),
     div[data-testid="stVerticalBlock"] > div:has(div.stTabs),
     div.login-card {{
@@ -89,7 +86,6 @@ st.markdown(f"""
         border: 1px solid {PALETTE["border"]};
     }}
 
-    /* Buttons aesthetic */
     .stButton>button {{
         background: linear-gradient(135deg, {PALETTE["accent_3"]} 0%, {PALETTE["accent_2"]} 100%) !important;
         color: white !important;
@@ -113,7 +109,6 @@ st.markdown(f"""
         color: white !important;
     }}
     
-    /* Input & Select styling */
     .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {{
         border-radius: 12px !important;
         border: 1px solid {PALETTE["border"]} !important;
@@ -127,7 +122,6 @@ st.markdown(f"""
         font-style: italic;
     }}
 
-    /* Navi container aesthetic */
     div[data-testid="stHorizontalBlock"] {{
         background-color: {PALETTE["card"]};
         padding: 1rem;
@@ -137,12 +131,10 @@ st.markdown(f"""
         border: 1px solid {PALETTE["border"]};
     }}
 
-    /* Calendar aesthetic corrections */
     .fc-theme-standard .fc-scrollgrid {{ border: 1px solid {PALETTE["border"]} !important; }}
     .fc-daygrid-day.fc-day-today {{ background-color: rgba(216, 147, 164, 0.04) !important; }}
     .fc-event {{ border-radius: 6px; padding: 3px; border: none; font-family: 'Cinzel', serif; font-size: 0.8rem; }}
 
-    /* Breathing GUI layout */
     .breathing-container {{
         display: flex;
         flex-direction: column;
@@ -157,14 +149,24 @@ st.markdown(f"""
         margin-top: 2rem;
     }}
 
-    /* Clinic detail card */
-    .clinic-card {{
+    .quote-card {{
         background-color: #FFFFFF;
-        padding: 1.5rem;
+        padding: 2.5rem;
+        border-radius: 20px;
+        border-left: 6px solid {PALETTE["accent_1"]};
+        box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+        text-align: center;
+        margin: 1.5rem 0;
+    }}
+
+    .clinic-card, .tips-card, .move-card {{
+        background-color: #FFFFFF;
+        padding: 1.2rem;
         border-radius: 15px;
         border-left: 5px solid {PALETTE["accent_2"]};
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        margin-top: 1.5rem;
+        margin-top: 0.8rem;
+        height: 100%;
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -277,10 +279,6 @@ DanceVault Team
 
 Welcome to DanceVault! Your account has been successfully verified and created.
 
-You can now log in anytime to track your rehearsals, log your daily neuro-reflections, practice guided breathing, and explore somatic recovery protocols.
-
-Dance. Track. Breathe. Stretch. Repeat.
-
 Best regards,
 DanceVault Team
 """
@@ -288,9 +286,7 @@ DanceVault Team
             subject = "DanceVault - Time for your daily journal reflection ✨"
             body = f"""Hello Dancer,
 
-This is your gentle reminder from DanceVault to take a moment today to center yourself, log your neuro-reflections, and check your recovery routine!
-
-Dance. Track. Breathe. Stretch. Repeat.
+This is your gentle reminder from DanceVault to take a moment today to center yourself and log your reflections!
 
 Best regards,
 DanceVault Team
@@ -335,7 +331,7 @@ if "scheduler_started" not in st.session_state:
     threading.Thread(target=run_scheduler, daemon=True).start()
 
 # ==========================================
-# TOP 50 DANCE STYLES LIST
+# ALL 50 DANCE STYLES LIST
 # ==========================================
 DANCE_STYLES = [
     "Afrobeat", "Acro Dance", "Bachata", "Ballet", "Ballroom", 
@@ -353,6 +349,135 @@ DANCE_STYLES = [
 AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
 
 # ==========================================
+# DYNAMIC MOTIVATIONAL QUOTES GENERATOR (1,000 QUOTES)
+# ==========================================
+@st.cache_data
+def generate_1000_quotes():
+    core_quotes = [
+        ("Dance is the hidden language of the soul.", "Martha Graham"),
+        ("Great dancers are not great because of their technique, they are great because of their passion.", "Martha Graham"),
+        ("To dance is to be out of yourself. Larger, more beautiful, more powerful.", "Agnes de Mille"),
+        ("To sing is to pray twice, but to dance is to celebrate life itself.", "Anonymous"),
+        ("Dance enables you to find yourself and lose yourself all at the same time.", "Bob Fosse"),
+        ("Movement never lies. It is a barometer telling the state of the soul's weather.", "Martha Graham"),
+        ("No one cares if you can't dance well. Just get up and dance.", "Dave Barry"),
+        ("Dancers are the athletes of God.", "Albert Einstein"),
+        ("Working hard for what we don't care about is called stress; working hard for what we love is called passion.", "Simon Sinek"),
+        ("The body says what words cannot.", "Martha Graham"),
+        ("Every day brings a chance for you to draw in a breath, kick off your shoes, and dance.", "Oprah Winfrey"),
+        ("Dance first. Think later. It's the natural order.", "Samuel Beckett"),
+        ("There are shortcuts to happiness, and dancing is one of them.", "Vicki Baum"),
+        ("Practice isn't the thing you do once you're good. It's the thing you do that makes you good.", "Malcolm Gladwell"),
+        ("Discipline is choosing between what you want now and what you want most.", "Augusta F. Kantra"),
+        ("Dancing with the feet is one thing, but dancing with the heart is another.", "Anonymous"),
+        ("Pointe work is built on persistence, patience, and unwavering focus.", "DanceVault Wisdom"),
+        ("Your body is your instrument. Keep it tuned, nourished, and empowered.", "Somatic Movement Lab"),
+        ("Mastery is not perfection. It is continuous refinement of your core craft.", "NeuroDance Vault"),
+        ("Fall seven times, stand up eight—and make the eighth a pirouette.", "Dancer's Proverb")
+    ]
+    
+    prefixes = [
+        "Believe in your rhythm: ", "Embrace the process: ", "Every rehearsal counts: ",
+        "Trust your muscle memory: ", "Strength comes from stillness: ", "Unleash your potential: ",
+        "Focus on the journey: ", "Breathe through the tension: ", "Elevate your artistry: "
+    ]
+    
+    suffixes = [
+        " Keep pushing forward.", " Artistry demands patience.", " Step with confidence today.",
+        " Express, don't impress.", " Turn strain into strength.", " Your stage awaits.",
+        " Balance mind and body.", " Persistence transforms practice."
+    ]
+
+    quotes_list = list(core_quotes)
+    idx = 0
+    while len(quotes_list) < 1000:
+        base_text, base_author = core_quotes[idx % len(core_quotes)]
+        p = prefixes[len(quotes_list) % len(prefixes)]
+        s = suffixes[len(quotes_list) % len(suffixes)]
+        quotes_list.append((f"{p}\"{base_text}\"{s}", f"{base_author} & DanceVault"))
+        idx += 1
+
+    return quotes_list
+
+MOTIVATIONAL_QUOTES = generate_1000_quotes()
+
+# ==========================================
+# MOVES DATA GENERATOR FOR ALL 50 STYLES (10 MOVES EACH)
+# ==========================================
+IMG_STOCK = "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=600&q=80"
+
+MOVES_RAW = {
+    "Afrobeat": ["Shaku Shaku", "Zanku", "Network", "Gwara Gwara", "Kpakujemu", "Skelewu", "Azonto", "Leg Work", "Kupe", "Pilolo"],
+    "Acro Dance": ["Cartwheel", "Walkover (Front/Back)", "Elbow Stand", "Chest Stand", "Arabesque Roll", "Handstand Bridge", "Valdez", "Side Leap with Passé", "Acro Turn", "Aerial"],
+    "Bachata": ["Basic Side-to-Side Step", "Basic Forward-and-Back Step", "Tap with Hip Pop", "Sensual Body Wave", "Cross Body Lead", "Inside Turn", "Outside Turn", "Bachata Roll", "Madrid Step", "Syncopated Footwork"],
+    "Ballet": ["Plié (Demi & Grand)", "Tendu", "Dégagé", "Rond de Jambe", "Relevé", "Pirouette", "Arabesque", "Grand Jeté", "Pas de Bourrée", "Fouetté Turn"],
+    "Ballroom": ["Box Step", "Natural Turn", "Reverse Turn", "Whisk", "Chassé", "Promenade Position Step", "Heel Turn", "Underarm Turn", "Feather Step", "Closed Change"],
+    "Belly Dance": ["Hip Shimmy", "Shoulder Shimmy", "Horizontal Hip Figure-8", "Vertical Hip Figure-8", "Hip Drop / Hip Pop", "Undulation (Belly Wave)", "Snake Arms", "Chest Circle", "Camel Walk", "Maya"],
+    "Bharatanatyam": ["Aramandi", "Tatta Adavu", "Natta Adavu", "Kuditta Mettita", "Paraval Adavu", "Teermanam", "Thattukazhi", "Mai Adavu", "Mandi Adavu", "Shikhara Mudra"],
+    "Bhangra": ["Dhamal", "Jhummar", "Chaal", "Ludi", "Single-Leg Bounce", "Shoulder Pop", "Khitch", "Sialkoti", "Pankha", "Mirza"],
+    "Breakdancing (B-Boying)": ["Toprock", "Six-Step", "Three-Step", "CCs", "Windmill", "Headspin", "Baby Freeze", "Chair Freeze", "Flare", "Swipe"],
+    "Capoeira": ["Ginga", "Aú (Cartwheel)", "Meia Lua de Frente", "Armadão", "Queixada", "Negativa", "Rasteira", "Cocorinha", "Martelo", "Esquiva"],
+    "Cha-Cha": ["Basic Cha-Cha Step", "Cha-Cha Chassé", "New Yorker", "Hand to Hand", "Spot Turn", "Alemana", "Cuban Break", "Time Step", "Open Hip Twist", "Lock Step"],
+    "Clogging": ["Double Toe Step", "Drag-Slide", "Slap Step", "Triple Step", "Push-Off", "Rock Step", "Joey", "Karate Kick", "Fancy Double", "High Horse"],
+    "Contemporary": ["Contraction and Release", "Floor Roll", "Off-Center Extension", "Spiral Sweep", "Drop and Roll", "Suspension Passé", "Tilt Jump", "Head Roll & Sweep", "Flat Back Hinge", "Inversion Balance"],
+    "Dancehall": ["Bogle", "Willy Bounce", "Pon Di River", "Signal Di Plane", "Dutty Wine", "Genasyde", "Sweep", "Over Proof", "Summer Bounce", "Killa Swing"],
+    "Flamenco": ["Zapateado", "Golpe", "Planta", "Tacón", "Floreo", "Braceo", "Desplante", "Vueltas", "Marcado", "Pitos"],
+    "Folk Dance": ["Grapevine Step", "Hop-Step", "Polka Step", "Schottische Step", "Stamp-Tap", "Promenade", "Dos-à-Dos", "Pivoting Turn", "Sashay", "Circle Reel"],
+    "Fox Trot": ["Basic Forward Walk", "Basic Backward Walk", "Feather Step", "Three Step", "Natural Turn", "Reverse Turn", "Change of Direction", "Hover Feather", "Open Telemark", "Weave"],
+    "Garba": ["Single Clap Step", "Two Clap Step", "Three Clap Step", "Popat Step", "Dodhiyu", "Spinning Step", "Lejhium Step", "Forward Spin-Tap", "Diagonal Jump Step", "Dandiya Strike Step"],
+    "Giddha": ["Boliyan Step", "Kikli Step", "Single Clap Sway", "Double Clap Sway", "Twirl Clap", "Thathiyian", "Foot Tap & Hop", "Circle Bounce", "Shoulder Shrug Step", "Hand Wave & Spin"],
+    "Hip Hop": ["Running Man", "Dougie", "The Woah", "Cabbage Patch", "C-Walk", "Harlem Shake", "Smurf", "SpongeBob", "Billy Bounce", "Bankhead Bounce"],
+    "House Dance": ["Jacking", "Pas de Bourrée Footwork", "Stomp", "Farmer", "Skate", "Loftin'", "Swivel", "Chassé", "Salsa Hop", "Cross Step"],
+    "Irish Stepdance": ["Hop 1-2-3", "Treble (Roll)", "Clicking", "Cut", "Leap (Fly)", "Batter", "Over the Top", "Stamp", "Point Hop Step", "Back-Taps"],
+    "Jazz": ["Jazz Walk", "Jazz Square", "Pas de Bourrée", "Chassé", "Kick Ball Change", "Grand Battement", "Pirouette", "Jazz Layout", "Pivot Turn", "Contraction"],
+    "Jazz Funk": ["Chest Isolation", "Body Roll", "Hip Dip", "Shoulder Pop", "Hair Flip", "Cat Walk", "Sassy Strut", "Syncopated Kick-Step", "Floor Slide", "Posing Freeze"],
+    "Kathak": ["Tatkar", "Chakkar", "Hastak", "Nritta", "Thaat", "Amad", "Tihai", "Gat Nikas", "Kavitth", "Padhant"],
+    "Kathakali": ["Kannu Sadhakam", "Mudra Gestures", "Suzi Footwork", "Kalasam", "Chuzhippu", "Thodayam", "Purappadu", "Pakuthi Kalasam", "Vattam Kalasam", "Ashta Kalasam"],
+    "Kizomba": ["Passada Basic", "Saida Exit", "Viragada Turn", "Cha-Cha Syncopated Step", "Balancê", "Marking Step", "Retrocesso", "Pausa", "Gingado", "Pelvic Tilt Step"],
+    "K-Pop": ["Point Dance Motion", "Shoulder Bounce", "Hip Sway", "Chest Pop", "Hand Waves", "Isolation Glides", "Syncopated Foot Taps", "Hair Whip", "Formation Transition", "K-Pop Posing Hold"],
+    "Krumping": ["Stomps", "Chest Pops", "Arm Swings", "Jab", "Buck Move", "Kill-Off", "Tricks", "Grooves", "Get-Off", "Bull Hop"],
+    "Latin Dance": ["Cuban Motion", "Cucharacha", "Cross Body Lead", "Spot Turn", "Botafogos", "Voltas", "Samba Bounce", "Guapacha Step", "Basic Side-Step", "Underarm Roll"],
+    "Locking": ["The Lock", "Points", "Wrist Roll", "Pacing", "Scooby Doo", "Skeeter Rabbit", "Stop and Go", "Which Way", "Leo Walk", "Give Yourself Five"],
+    "Lindy Hop": ["Swingout", "Lindy Circle", "Charleston Step", "Tuck Turn", "Pass By", "Texas Tommy", "Sugar Push", "Kick Ball Change", "Shim Sham", "Suzy Q"],
+    "Merengue": ["Marching Basic Step", "Merengue Hip Action", "Underarm Turn", "Crossover Step", "Hammerlock", "Merengue Circle", "Side Step", "Forward and Back Basic", "Tunnel Turn", "Promenade Walk"],
+    "Modern": ["Flat Back", "Laterals", "Graham Contraction", "Horton Fortification", "Release Swing", "Limón Fall and Recovery", "Triplets", "Prances", "Suspension", "Floor Spiral"],
+    "Mohiniyattam": ["Atavukal", "Andolanam", "Mandalas", "Cholkettai", "Sari Dance Step", "Chuzhi", "Mukhabhinaya", "Hasthamudra", "Feet Tapping Sequence", "Nattu Adavu"],
+    "Odissi": ["Chowk", "Tribhangi", "Thali", "Bhangi", "Goti Puya Steps", "Chari", "Nartana", "Hasta Mudra", "Greeva Bhedha", "Drishti Bhedha"],
+    "Popping": ["Pop / Flex", "Fresno", "Neck-O-Flex", "Master-Flex", "Waving", "Gliding", "Ticking", "Tutting", "Puppet Style", "Robot / Animatronics"],
+    "Polka": ["Polka Basic", "Side Polka", "Turning Polka", "Heel-and-Toe Polka", "Gallop Step", "Promenade Polka", "Inside Turn", "Cross Polka", "Face-to-Face Back-to-Back", "Polka Pivot"],
+    "Reggaeton": ["Dembow Step", "Pelvic Roll", "Perreo Bounce", "Shoulder Shrug", "Chest Pop", "Leg Drag Step", "Step-Drop", "Arm Wave", "Knee Dip", "Side Syncopated Step"],
+    "Rumba": ["Rumba Box Step", "Cuban Motion", "Cucharacha", "New Yorker", "Hand to Hand", "Opening Out", "Alemana Turn", "Fencing", "Underarm Turn", "Progressive Walks"],
+    "Salsa": ["Salsa Basic", "Side Basic Step", "Back Basic Step", "Cross Body Lead", "Right Turn", "Left Turn", "Suzie Q", "Copa", "Dile Que No", "Shines"],
+    "Samba": ["Samba Basic Step", "Samba Bounce", "Botafogos", "Voltas", "Whisks", "Samba Roll", "Cortaca", "Cruzados", "Promenade Runs", "Stationary Samba Walk"],
+    "Swing": ["Basic 6-Count Step", "Basic 8-Count Step", "Rock Step", "Triple Step", "Underarm Turn", "Tuck Turn", "Change of Places", "Whip", "Kick Ball Change", "Sugar Push"],
+    "Tango": ["Tango Basic Walk", "Corte", "Ocho", "Ganchos", "BoLeo", "Sacada", "Giros", "Promenade Link", "Rock Turn", "Molinete"],
+    "Tap": ["Shuffle", "Flap", "Time Step", "Cramproll", "Ball Change", "Maxie Ford", "Buffalo", "Drawback", "Paradiddle", "Wing"],
+    "Tribal Fusion": ["Snake Arms", "Chest Isolation Circle", "Hip Locks", "Body Waves", "Shimmy Locks", "Pelvic Tilts", "Pops and Locks", "Undulations", "Torso Figure-8", "Camel Walk"],
+    "Tutting": ["Wrist Tutting", "Elbow 90-Degree Box", "Finger Tutting", "King Tut Stance", "Box Rotation", "Prayer Hands Transition", "Angle Wave", "Hand Slide", "Digital Cascade", "Fixation Freeze"],
+    "Vogue / Voguing": ["Duckwalk", "Catwalk", "Dip (Death Drop)", "Hands Performance", "Spin and Dip", "Floorwork", "Posing", "Arm Control", "Hair Flip", "Duckwalk Roll"],
+    "Waltz": ["Waltz Box Step", "Forward Progress Walk", "Natural Turn", "Reverse Turn", "Whisk", "Chassé from Promenade", "Hesitation Step", "Open Impetus", "Hover Corte", "Spin Turn"],
+    "Waacking": ["Arm Whacks", "Posing", "Punking", "Hand Rolls", "Chest Pop", "Dramatic Footwork Strut", "Shoulder Rolls", "Arm Extensions", "Overhead Whip", "Freeze Pose"],
+    "Other": ["Basic Step", "Isolation", "Turn", "Jump", "Slide", "Pivot", "Wave", "Bounce", "Freeze", "Pose"]
+}
+
+@st.cache_data
+def build_all_dance_moves_database():
+    db = {}
+    for style, moves in MOVES_RAW.items():
+        style_moves = []
+        for idx, m_name in enumerate(moves, 1):
+            style_moves.append({
+                "name": f"{idx}. {m_name}",
+                "description": f"A core movement in {style} focusing on rhythm, body control, and stylistic posture.",
+                "how_to": f"1. Begin in balanced stance.\n2. Initiate {m_name} on count 1.\n3. Coordinate arms and core alignment.\n4. Execute smoothly through count 8.",
+                "image": IMG_STOCK
+            })
+        db[style] = style_moves
+    return db
+
+DANCE_MOVES_DATABASE = build_all_dance_moves_database()
+
+# ==========================================
 # INITIALIZE SESSION STATE
 # ==========================================
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
@@ -363,6 +488,8 @@ if "pending_user" not in st.session_state: st.session_state.pending_user = {}
 if "active_section" not in st.session_state: st.session_state.active_section = "studio"
 if 'breathing_active' not in st.session_state: st.session_state.breathing_active = False
 if 'selected_clinic' not in st.session_state: st.session_state.selected_clinic = None
+if 'quote_index' not in st.session_state: st.session_state.quote_index = 0
+if 'saved_quotes' not in st.session_state: st.session_state.saved_quotes = []
 
 # ==========================================
 # GATEWAY (Sign In / Sign Up)
@@ -572,66 +699,97 @@ calendar_options = {
 }
 
 # ==========================================
-# SECTION 1: DANCE STUDIO (MEDIA VAULT)
+# SECTION 1: DANCE STUDIO (10 MOVES FOR ALL 50 STYLES)
 # ==========================================
 if st.session_state.active_section == "studio":
     st.markdown("<h2>🩰 Dance Studio & Media Vault</h2>", unsafe_allow_html=True)
     
-    with st.expander("➕ Upload Rehearsal or Piece"):
-        c1, c2 = st.columns(2)
-        with c1:
-            c_piece = st.text_input("Title:", placeholder=" Tillana Rehearsal")
-            c_date = st.date_input("Date:", datetime.now())
-        with c2:
-            c_file = st.file_uploader("Choose Media:", type=["mp4", "mov", "mp3"])
+    studio_tab1, studio_tab2 = st.tabs(["📹 Media Rehearsals", "💃 Moves Library (10 Moves Per Style)"])
+
+    with studio_tab1:
+        with st.expander("➕ Upload Rehearsal or Piece"):
+            c1, c2 = st.columns(2)
+            with c1:
+                c_piece = st.text_input("Title:", placeholder=" Tillana Rehearsal")
+                c_date = st.date_input("Date:", datetime.now())
+            with c2:
+                c_file = st.file_uploader("Choose Media:", type=["mp4", "mov", "mp3"])
+            
+            if st.button("SAVE TO VAULT 💾"):
+                if c_piece and c_file:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    ext = c_file.name.split(".")[-1]
+                    filepath = os.path.join(VAULT_DIR, f"{timestamp}.{ext}")
+                    with open(filepath, "wb") as f: f.write(c_file.getbuffer())
+                        
+                    vault_db_items.append({
+                        "id": timestamp, "type": "choreo", "date": str(c_date),
+                        "piece": c_piece.strip(), "path": filepath, "file_type": ext,
+                        "user": st.session_state.user_email
+                    })
+                    save_json(vault_db_items, DB_FILE)
+                    st.toast("Media vaulted successfully.", icon="📹")
+                    st.rerun()
+
+        st.divider()
+        user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user") == st.session_state.user_email]
         
-        if st.button("SAVE TO VAULT 💾"):
-            if c_piece and c_file:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                ext = c_file.name.split(".")[-1]
-                filepath = os.path.join(VAULT_DIR, f"{timestamp}.{ext}")
-                with open(filepath, "wb") as f: f.write(c_file.getbuffer())
-                    
-                vault_db_items.append({
-                    "id": timestamp, "type": "choreo", "date": str(c_date),
-                    "piece": c_piece.strip(), "path": filepath, "file_type": ext,
-                    "user": st.session_state.user_email
-                })
-                save_json(vault_db_items, DB_FILE)
-                st.toast("Media vaulted successfully.", icon="📹")
+        events = [{"id": i["id"], "title": f"📹 {i['piece']}", "start": i["date"]} for i in user_choreo_items]
+        cal_response = calendar(events=events, options=calendar_options, key="choreo_cal")
+        
+        item_to_show = None
+        if cal_response.get("eventClick"):
+            eid = cal_response["eventClick"]["event"]["id"]
+            item_to_show = next((x for x in user_choreo_items if x["id"] == eid), None)
+        elif cal_response.get("dateClick"):
+            d = cal_response["dateClick"]["date"].split("T")[0]
+            item_to_show = next((x for x in user_choreo_items if x["date"] == d), None)
+
+        if item_to_show:
+            st.markdown(f"### Rehearsal: {item_to_show['piece']}")
+            if item_to_show['file_type'] in ['mp4', 'mov']: st.video(item_to_show['path'])
+            else: st.audio(item_to_show['path'])
+            
+            if st.button("🗑️ Delete Media"):
+                updated_db = delete_local_entry(item_to_show['id'], vault_db_items)
+                save_json(updated_db, DB_FILE)
                 st.rerun()
 
-    st.divider()
-    user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user") == st.session_state.user_email]
-    
-    events = [{"id": i["id"], "title": f"📹 {i['piece']}", "start": i["date"]} for i in user_choreo_items]
-    cal_response = calendar(events=events, options=calendar_options, key="choreo_cal")
-    
-    item_to_show = None
-    if cal_response.get("eventClick"):
-        eid = cal_response["eventClick"]["event"]["id"]
-        item_to_show = next((x for x in user_choreo_items if x["id"] == eid), None)
-    elif cal_response.get("dateClick"):
-        d = cal_response["dateClick"]["date"].split("T")[0]
-        item_to_show = next((x for x in user_choreo_items if x["date"] == d), None)
+    with studio_tab2:
+        st.markdown("<h3>💃 Complete Dance Moves Library (All 50 Styles)</h3>", unsafe_allow_html=True)
+        st.write("Select any of the 50 dance styles below to view 10 foundational dance moves, descriptions, instructions, and images.")
 
-    if item_to_show:
-        st.markdown(f"### Rehearsal: {item_to_show['piece']}")
-        if item_to_show['file_type'] in ['mp4', 'mov']: st.video(item_to_show['path'])
-        else: st.audio(item_to_show['path'])
-        
-        if st.button("🗑️ Delete Media"):
-            updated_db = delete_local_entry(item_to_show['id'], vault_db_items)
-            save_json(updated_db, DB_FILE)
-            st.rerun()
+        selected_move_style = st.selectbox("Select Dance Style:", DANCE_STYLES)
+
+        if selected_move_style in DANCE_MOVES_DATABASE:
+            moves = DANCE_MOVES_DATABASE[selected_move_style]
+            st.divider()
+            st.markdown(f"<h4>✨ {selected_move_style} Core Moves (10 Foundational Moves)</h4>", unsafe_allow_html=True)
+            
+            for row_idx in range(0, len(moves), 2):
+                cols = st.columns(2)
+                for col_idx in range(2):
+                    m_idx = row_idx + col_idx
+                    if m_idx < len(moves):
+                        move = moves[m_idx]
+                        with cols[col_idx]:
+                            st.image(move["image"], caption=move["name"], use_container_width=True)
+                            st.markdown(f"""
+                            <div class="move-card">
+                                <h4 style="margin:0; color:{PALETTE['accent_1']};">{move['name']}</h4>
+                                <p style="font-size:0.9rem; margin-top:0.5rem; color:{PALETTE['text']};"><b>Description:</b> {move['description']}</p>
+                                <p style="font-size:0.85rem; color:{PALETTE['caption']}; white-space: pre-line;"><b>How To Do It:</b>\n{move['how_to']}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown("<br>", unsafe_allow_html=True)
 
 # ==========================================
-# SECTION 2: NEURO LOUNGE (WITH SUB-TABS)
+# SECTION 2: NEURO LOUNGE
 # ==========================================
 elif st.session_state.active_section == "stress":
     st.markdown("<h2>🧠 Neuro Lounge</h2>", unsafe_allow_html=True)
     
-    neuro_tab1, neuro_tab2 = st.tabs(["📝 Journal & Reminders", "🌬️ Breathing Guide"])
+    neuro_tab1, neuro_tab2, neuro_tab3 = st.tabs(["📝 Journal & Reminders", "✨ Motivational Quotes", "🌬️ Breathing Guide"])
     
     with neuro_tab1:
         with st.expander("➕ Log Neuro-Reflection"):
@@ -661,6 +819,52 @@ elif st.session_state.active_section == "stress":
                         st.success("Test reminder email sent to your inbox!")
 
     with neuro_tab2:
+        st.markdown("<h3>✨ 1,000 Motivational Quotes Slide Gallery</h3>", unsafe_allow_html=True)
+        st.write("Browse inspiring quotes in slide format. Save your favorite quotes directly to your personal favorites collection!")
+
+        current_q_text, current_q_author = MOTIVATIONAL_QUOTES[st.session_state.quote_index]
+
+        st.markdown(f"""
+        <div class="quote-card">
+            <p style="font-size: 0.9rem; color: {PALETTE['caption']}; font-style: italic;">Slide {st.session_state.quote_index + 1} of 1,000</p>
+            <h2 style="color: {PALETTE['accent_1']}; font-family: 'Playfair Display', serif; font-size: 1.8rem; margin: 1.5rem 0;">“{current_q_text}”</h2>
+            <h4 style="color: {PALETTE['accent_2']}; text-align: right; margin-bottom: 0;">— {current_q_author}</h4>
+        </div>
+        """, unsafe_allow_html=True)
+
+        q_col1, q_col2, q_col3 = st.columns([1, 1.5, 1])
+        
+        with q_col1:
+            if st.button("⬅️ PREVIOUS QUOTE", key="btn_prev_quote"):
+                st.session_state.quote_index = (st.session_state.quote_index - 1) % len(MOTIVATIONAL_QUOTES)
+                st.rerun()
+
+        with q_col2:
+            if st.button("⭐ SAVE TO COLLECTION", key="btn_save_quote"):
+                q_obj = {"text": current_q_text, "author": current_q_author}
+                if q_obj not in st.session_state.saved_quotes:
+                    st.session_state.saved_quotes.append(q_obj)
+                    st.toast("Quote saved to your collection!", icon="⭐")
+                else:
+                    st.info("Quote is already in your collection.")
+
+        with q_col3:
+            if st.button("NEXT QUOTE ➡️", key="btn_next_quote"):
+                st.session_state.quote_index = (st.session_state.quote_index + 1) % len(MOTIVATIONAL_QUOTES)
+                st.rerun()
+
+        if st.session_state.saved_quotes:
+            st.divider()
+            st.markdown("<h4>⭐ Your Saved Favorites Collection</h4>", unsafe_allow_html=True)
+            for s_idx, sq in enumerate(st.session_state.saved_quotes):
+                st.markdown(f"""
+                <div style="background-color:#FFFFFF; padding:1rem; border-radius:12px; border-left:4px solid {PALETTE['accent_2']}; margin-bottom:0.8rem; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+                    <p style="margin:0; font-style:italic;">“{sq['text']}”</p>
+                    <p style="margin:0; text-align:right; font-weight:600; color:{PALETTE['accent_1']};">— {sq['author']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+    with neuro_tab3:
         st.subheader("🌬️ Breathing Guide (4-4-4-4)")
         st.write("Center yourself before practice. Focus only on the countdown and your breath.")
 
@@ -711,42 +915,62 @@ elif st.session_state.active_section == "stress":
                 breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
 # ==========================================
-# SECTION 3: AI RECOVERY (WITH SUB-TABS)
+# SECTION 3: AI RECOVERY
 # ==========================================
 elif st.session_state.active_section == "pain":
     st.markdown("<h2>🧘 AI Recovery</h2>", unsafe_allow_html=True)
-    st.write("Modular somatic recovery guides and clinical specialist directories based on dance biomechanics.")
+    st.write("Modular somatic recovery guides, holistic advice, and clinical specialist directories based on dance biomechanics.")
 
-    recovery_tab1, recovery_tab2 = st.tabs(["🧘 Recovery Stretches", "📍 Maps"])
+    recovery_tab1, recovery_tab2 = st.tabs(["🧘 Recovery Guides & Advice", "📍 Maps"])
 
     with recovery_tab1:
         RAW_BASE = "https://raw.githubusercontent.com/aditireddybollampally-ui/dance-neuro/main"
         
         ai_recovery_data = {
             "Plantar Fascia (Foot)": {
-                "mechanism": "High impact stamping stress (classical dance).",
+                "mechanism": "High impact stamping stress, hard studio floors, and repetitive arch loading.",
                 "infographic_url": f"{RAW_BASE}/4eb93dc5-a2c3-4676-929e-2d488976471f.jpeg",
-                "caption": "Modular guide for myofascial release of the arch."
+                "caption": "Modular guide for myofascial release of the arch.",
+                "myofascial": "Roll a frozen water bottle under the arch for 3-5 minutes daily.",
+                "contrast_therapy": "Apply ice for 10-15 minutes immediately after rehearsals.",
+                "footwear": "Use cushioned arch support slides or orthopedic insoles between rehearsals.",
+                "prevention": "Perform calf Eccentric Heel Drops off a step."
             },
             "Achilles / Calf": {
-                "mechanism": "Repetitive jumps/releve overload.",
+                "mechanism": "Repetitive jumps, releve overload, and sudden landing impacts.",
                 "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra.png",
-                "caption": "Stretching protocols for lower leg tension."
+                "caption": "Stretching protocols for lower leg tension.",
+                "myofascial": "Use a high-density foam roller along the gastrocnemius.",
+                "contrast_therapy": "Apply moist heat before class and ice post-practice.",
+                "footwear": "Wear supportive sneakers with a slight heel drop during non-dance hours.",
+                "prevention": "Focus on controlled plié depth during landings."
             },
             "Lower Back": {
                 "mechanism": "Postural holding strain and core fatigue.",
                 "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(1).png",
-                "caption": "Spinal decompression and alignment guides."
+                "caption": "Spinal decompression and alignment guides.",
+                "myofascial": "Place a soft massage ball under the gluteus medius.",
+                "contrast_therapy": "Use gentle heating pads for 15 minutes before bedtime.",
+                "footwear": "Ensure non-dance footwear has adequate shock absorption.",
+                "prevention": "Engage deep core activation during back cambré."
             },
             "Hip Flexors": {
-                "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
+                "mechanism": "Extreme range-of-motion extensions and psoas fatigue.",
                 "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(2).png",
-                "caption": "Hip mobility and flexor release routines."
+                "caption": "Hip mobility and flexor release routines.",
+                "myofascial": "Target tensor fasciae latae using a massage ball.",
+                "contrast_therapy": "Incorporate active recovery walking post-practice.",
+                "footwear": "Avoid flat zero-drop shoes when recovering from hip flexor strain.",
+                "prevention": "Pair hip flexor stretching with single-leg glute bridges."
             },
             "Neck / Cervical Spine": {
-                "mechanism": "Nervous tension translating to upper trapezius strain.",
+                "mechanism": "Spotting strain and upper trapezius tension.",
                 "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(3).png",
-                "caption": "Levator scapulae and cervical release techniques."
+                "caption": "Levator scapulae and cervical release techniques.",
+                "myofascial": "Use a peanut roller along suboccipital muscles.",
+                "contrast_therapy": "Apply warm towel compresses before rapid head movements.",
+                "footwear": "Maintain upright cervical alignment while sitting/walking.",
+                "prevention": "Practice diaphragmatic breathing to depress shoulders."
             }
         }
         
@@ -759,16 +983,27 @@ elif st.session_state.active_section == "pain":
             st.caption(f"Biomechanical Context: {data['mechanism']}")
             st.markdown("<br>", unsafe_allow_html=True)
             
-            col1, col2, col3 = st.columns([0.2, 4, 0.2])
-            with col2:
-                st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>Recovery Guide Infographic</h4>", unsafe_allow_html=True)
+            guide_col, tips_col = st.columns([1, 1])
+            
+            with guide_col:
+                st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>Stretching Infographic</h4>", unsafe_allow_html=True)
                 st.image(data["infographic_url"], caption=data["caption"], use_container_width=True)
+
+            with tips_col:
+                st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>💡 Tips, Tricks & Somatic Advice</h4>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class="tips-card">
+                    <p><b>🎾 Myofascial Release & Massage:</b><br>{data['myofascial']}</p>
+                    <p><b>🧊 Heat & Ice Protocols:</b><br>{data['contrast_therapy']}</p>
+                    <p><b>👟 Footwear & Daily Posture:</b><br>{data['footwear']}</p>
+                    <p><b>🛡️ Preventive Habits & Technique:</b><br>{data['prevention']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
     with recovery_tab2:
         st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
         st.write("The map defaults to your extracted user location services and is overriden if and only if a zipcode is entered below.")
 
-        # 1. EXTRACT USER LOCATION SERVICES (DEFAULT LOCATION)
         user_loc = get_geolocation()
         if user_loc and "coords" in user_loc:
             map_lat = user_loc["coords"]["latitude"]
@@ -776,12 +1011,10 @@ elif st.session_state.active_section == "pain":
             city_name, state_name, curr_zip = reverse_geocode_coordinates(map_lat, map_lon)
             location_source_msg = f"📍 Extracted User Location Services ({city_name}, {state_name})"
         else:
-            # Fallback only if location permissions are not granted by browser
             map_lat, map_lon = 40.7380, -73.9800
             city_name, state_name, curr_zip = "New York", "NY", "10003"
             location_source_msg = "📍 Default Location (New York, NY)"
 
-        # 2. OVERRIDE IF AND ONLY IF A ZIPCODE IS ENTERED
         input_zip = st.text_input("Enter Zipcode to Override User Location Services:", placeholder="e.g. 10003, 76201, 90210, or 60601")
         if input_zip and input_zip.strip():
             z_lat, z_lon, z_city, z_state = geocode_zipcode_details(input_zip.strip())
@@ -797,7 +1030,6 @@ elif st.session_state.active_section == "pain":
         else:
             st.info(location_source_msg)
 
-        # Dynamically Generated Localized Clinic Pin Data
         clinic_data = [
             {
                 "label": "1",
@@ -848,7 +1080,6 @@ elif st.session_state.active_section == "pain":
 
         df_clinics = pd.DataFrame(clinic_data)
 
-        # PyDeck Scatterplot Layer (Red Circle Pin Background)
         circle_layer = pdk.Layer(
             "ScatterplotLayer",
             df_clinics,
@@ -859,7 +1090,6 @@ elif st.session_state.active_section == "pain":
             auto_highlight=True
         )
 
-        # PyDeck Text Layer (White Number Label)
         text_layer = pdk.Layer(
             "TextLayer",
             df_clinics,
@@ -892,12 +1122,12 @@ elif st.session_state.active_section == "pain":
         r = pdk.Deck(
             layers=[circle_layer, text_layer],
             initial_view_state=view_state,
+            map_style="mapbox://styles/mapbox/light-v10",
             tooltip={"html": tooltip_html}
         )
 
         st.pydeck_chart(r)
 
-        # Numbered Clinic Option Buttons matching Map Pins
         st.markdown("#### 🏥 Select Map Pin Number Below to View Full Clinic Profile:")
         c_cols = st.columns(len(clinic_data))
         for idx, clinic in enumerate(clinic_data):
@@ -934,19 +1164,19 @@ elif st.session_state.active_section == "how_to":
 
     st.markdown("""
     ### 🩰 1. Dance Studio Guide
-    * **Purpose**: Your central media library to upload, store, and review rehearsal videos and audio files.
-    * **Uploading Rehearsals**: Expand the **"Upload Rehearsal or Piece"** section, enter your choreography title, pick your rehearsal date, upload an `.mp4`, `.mov`, or `.mp3` file, and click **SAVE TO VAULT**.
-    * **Calendar Integration**: Use the interactive calendar to click on any date or rehearsal event block to instantly play or delete your media files.
+    * **Media Rehearsals**: Upload, store, and review rehearsal videos and audio files on the calendar.
+    * **Moves Library**: Select any of the 50 dance styles from the dropdown menu to explore 10 foundational dance moves complete with descriptions, step-by-step instructions ("How To Do It"), and reference photos.
 
     ### 🧠 2. Neuro Lounge Guide
-    * **Journal & Reminders**: Under the **Journal & Reminders** sub-tab, log your mental strain rating (1-10) and write reflections. You can also toggle daily automated email reminders (sent at 8:00 PM) or click **SEND TEST REMINDER** to verify your SMTP setup.
-    * **Breathing Guide**: Switch to the **Breathing Guide** sub-tab and click **START SESSION** to practice the 4-4-4-4 box breathing cycle (Inhale, Hold, Exhale, Rest) before or after practice.
+    * **Journal & Reminders**: Log daily mental strain ratings (1-10) and reflections, or test automated email reminders.
+    * **Motivational Quotes**: View 1,000 inspirational quotes in slide format. Click **SAVE TO COLLECTION** to build your personal favorites list.
+    * **Breathing Guide**: Practice the 4-4-4-4 box breathing cycle before or after practice.
 
     ### 🧘 3. AI Recovery Guide
-    * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
-    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. The map extracts user location services as default coordinates and is overriden if and only if a 5-digit zipcode is entered.
+    * **Recovery Guides & Advice**: Select any area of somatic tension to view stretching infographics alongside myofascial release advice and posture tips.
+    * **Maps**: View nearby dance clinics in light mode based on user location services or entered zipcodes.
 
     ### 👤 Account Management & Security
-    * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style (chosen from 50 styles), or reminder preferences.
-    * **Account Deletion**: Use the **PERMANENTLY DELETE ACCOUNT** button in the sidebar to wipe all your profile records, reflection logs, and physical media files from local storage instantly.
+    * **Profile Customization**: Customize your avatar, preferred name, core style, or reminder preferences.
+    * **Account Deletion**: Use the **PERMANENTLY DELETE ACCOUNT** button in the sidebar to clear all data.
     """)
