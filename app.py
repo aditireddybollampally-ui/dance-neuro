@@ -911,7 +911,7 @@ elif st.session_state.active_section == "stress":
                 breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
 # ==========================================
-# SECTION 3: AI RECOVERY
+# SECTION 3: AI RECOVERY (MAP IN DARK MODE)
 # ==========================================
 elif st.session_state.active_section == "pain":
     st.markdown("<h2>🧘 AI Recovery</h2>", unsafe_allow_html=True)
@@ -1115,10 +1115,11 @@ elif st.session_state.active_section == "pain":
         </div>
         """
 
+        # MAP REVERTED TO DARK MODE
         r = pdk.Deck(
             layers=[circle_layer, text_layer],
             initial_view_state=view_state,
-            map_style="mapbox://styles/mapbox/light-v10",
+            map_style="mapbox://styles/mapbox/dark-v10",
             tooltip={"html": tooltip_html}
         )
 
@@ -1170,7 +1171,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Guides & Advice**: Select any area of somatic tension to view stretching infographics alongside myofascial release advice and posture tips.
-    * **Maps**: View nearby dance clinics in light mode based on user location services or entered zipcodes.
+    * **Maps**: View nearby dance clinics in dark mode based on user location services or entered zipcodes.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Customize your avatar, preferred name, core style, or reminder preferences.
