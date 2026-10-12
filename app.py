@@ -599,7 +599,7 @@ elif st.session_state.active_section == "stress":
 
     st.divider()
     
-    st.subheader("🌬️ Aesthetic Breathing Guide (4-4-4-4)")
+    st.subheader("🌬️ Breathing Guide (4-4-4-4)")
     st.write("Center yourself before practice. Focus only on the countdown and your breath.")
 
     b_col1, b_col2 = st.columns([1, 2.5])
