@@ -187,10 +187,32 @@ def delete_local_entry(entry_id, db_items):
             updated_items.append(item)
     return updated_items
 
+# COMPREHENSIVE ACCOUNT DELETION FUNCTION
+def delete_user_account_completely(target_user_email):
+    # 1. Purge all physical media files and database records owned by user
+    vault_db = load_json(DB_FILE, [])
+    retained_vault_items = []
+    for item in vault_db:
+        if item.get("user") == target_user_email:
+            if "path" in item and os.path.exists(item["path"]):
+                try:
+                    os.remove(item["path"])
+                except Exception:
+                    pass
+        else:
+            retained_vault_items.append(item)
+    save_json(retained_vault_items, DB_FILE)
+
+    # 2. Remove user profile and credentials
+    users_db = load_json(USER_DB_FILE, {})
+    if target_user_email in users_db:
+        del users_db[target_user_email]
+        save_json(users_db, USER_DB_FILE)
+
 def generate_code(): return str(random.randint(100000, 999999))
 
 # REAL EMAIL SENDER FUNCTION VIA SMTP
-def send_real_email(to_email, code_or_body, purpose="verification"):
+def send_real_email(to_email, code_or_name, purpose="verification"):
     try:
         smtp_email = st.secrets["smtp"]["email"]
         smtp_password = st.secrets["smtp"]["password"]
@@ -199,9 +221,22 @@ def send_real_email(to_email, code_or_body, purpose="verification"):
             subject = f"DanceVault - Your {purpose.capitalize()} Code"
             body = f"""Hello,
 
-Your security code for {purpose} is: {code_or_body}
+Your security code for {purpose} is: {code_or_name}
 
 If you did not request this code, please ignore this email.
+
+Best regards,
+DanceVault Team
+"""
+        elif purpose == "welcome":
+            subject = "Welcome to DanceVault! ✨ Your Account is Active"
+            body = f"""Hello {code_or_name},
+
+Welcome to DanceVault! Your account has been successfully verified and created.
+
+You can now log in anytime to track your rehearsals, log your daily neuro-reflections, practice guided breathing, and explore somatic recovery protocols.
+
+Dance. Track. Breathe. Stretch. Repeat.
 
 Best regards,
 DanceVault Team
@@ -219,7 +254,7 @@ DanceVault Team
 """
         else:
             subject = f"DanceVault Notification"
-            body = code_or_body
+            body = str(code_or_name)
 
         msg = MIMEMultipart()
         msg['From'] = f"DanceVault <{smtp_email}>"
@@ -305,24 +340,9 @@ if not st.session_state.logged_in:
                 else:
                     st.error("ID not recognized.")
             
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("🔵 Quick Google Access", key="btn_google_login"):
-                    g_email = "dancer.google@gmail.com"
-                    if g_email not in users:
-                        users[g_email] = {
-                            "password": "google_oauth_user", "preferred_name": "Dancer", 
-                            "dance_style": "Other", "verified": True, "avatar": "✨",
-                            "email_reminders": True
-                        }
-                        save_json(users, USER_DB_FILE)
-                    st.session_state.logged_in = True
-                    st.session_state.user_email = g_email
-                    st.rerun()
-            with c2:
-                if st.button("Forgot Key?", key="btn_to_fp"):
-                    st.session_state.auth_page = "forgot_request"
-                    st.rerun()
+            if st.button("Forgot Key?", key="btn_to_fp"):
+                st.session_state.auth_page = "forgot_request"
+                st.rerun()
                     
             st.markdown(f"<p style='text-align: center; color: {PALETTE['caption']}; font-size: 0.95rem; margin-top: 2rem;'>New to the Vault?</p>", unsafe_allow_html=True)
             if st.button("INITIALIZE ACCOUNT ✨", key="btn_to_signup"):
@@ -375,6 +395,10 @@ if not st.session_state.logged_in:
                     pending["verified"] = True
                     users[pending["email"]] = pending
                     save_json(users, USER_DB_FILE)
+                    
+                    # Send Welcome Confirmation Email
+                    send_real_email(pending["email"], pending.get("preferred_name", "Dancer"), purpose="welcome")
+                    
                     st.session_state.logged_in = True
                     st.session_state.user_email = pending["email"]
                     st.rerun()
@@ -462,11 +486,9 @@ with st.sidebar:
         st.rerun()
         
     if st.button("🔴 PERMANENTLY DELETE ACCOUNT", key="btn_del_acc"):
-        updated_db = [x for x in vault_db_items if x.get("user") != st.session_state.user_email]
-        save_json(updated_db, DB_FILE)
-        if st.session_state.user_email in users_db: del users_db[st.session_state.user_email]
-        save_json(users_db, USER_DB_FILE)
+        delete_user_account_completely(st.session_state.user_email)
         st.session_state.logged_in = False
+        st.session_state.user_email = ""
         st.session_state.auth_page = "login"
         st.rerun()
 
