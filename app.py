@@ -4,6 +4,11 @@ import os
 import json
 import random
 import time
+import threading
+import schedule
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from streamlit_calendar import calendar
 
@@ -183,8 +188,73 @@ def delete_local_entry(entry_id, db_items):
     return updated_items
 
 def generate_code(): return str(random.randint(100000, 999999))
-def simulate_email(to_email, code, purpose):
-    st.toast(f"📧 Simulation for {to_email}: {purpose.capitalize()} code: {code}", icon="📩")
+
+# REAL EMAIL SENDER FUNCTION VIA SMTP
+def send_real_email(to_email, code_or_body, purpose="verification"):
+    try:
+        smtp_email = st.secrets["smtp"]["email"]
+        smtp_password = st.secrets["smtp"]["password"]
+        
+        if purpose in ["verification", "password reset"]:
+            subject = f"DanceVault - Your {purpose.capitalize()} Code"
+            body = f"""Hello,
+
+Your security code for {purpose} is: {code_or_body}
+
+If you did not request this code, please ignore this email.
+
+Best regards,
+DanceVault Team
+"""
+        elif purpose == "journal_reminder":
+            subject = "DanceVault - Time for your daily journal reflection ✨"
+            body = f"""Hello Dancer,
+
+This is your gentle reminder from DanceVault to take a moment today to center yourself, log your neuro-reflections, and check your recovery routine!
+
+Dance. Track. Breathe. Stretch. Repeat.
+
+Best regards,
+DanceVault Team
+"""
+        else:
+            subject = f"DanceVault Notification"
+            body = code_or_body
+
+        msg = MIMEMultipart()
+        msg['From'] = f"DanceVault <{smtp_email}>"
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+        
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(smtp_email, smtp_password)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Failed to send email to {to_email}: {e}")
+        return False
+
+# ==========================================
+# BACKGROUND SCHEDULER FOR JOURNAL REMINDERS
+# ==========================================
+def dispatch_daily_reminders():
+    users = load_json(USER_DB_FILE, {})
+    for email, profile in users.items():
+        if profile.get("email_reminders", True) and profile.get("verified", False):
+            send_real_email(email, "", purpose="journal_reminder")
+
+def run_scheduler():
+    schedule.every().day.at("20:00").do(dispatch_daily_reminders)
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
+if "scheduler_started" not in st.session_state:
+    st.session_state.scheduler_started = True
+    threading.Thread(target=run_scheduler, daemon=True).start()
 
 # ==========================================
 # INITIALIZE SESSION STATE
@@ -223,21 +293,28 @@ if not st.session_state.logged_in:
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("OPEN VAULT 🚀", key="btn_login_submit"):
                 if email_input in users:
-                    if not users[email_input].get("verified", True): st.error("Please verify email first.")
+                    if not users[email_input].get("verified", True):
+                        st.error("Please verify email first.")
                     elif users[email_input]["password"] == pass_input:
                         st.session_state.logged_in = True
                         st.session_state.user_email = email_input
                         st.success("Vault Opened.")
                         st.rerun()
-                    else: st.error("Invalid key.")
-                else: st.error("ID not recognized.")
+                    else:
+                        st.error("Invalid key.")
+                else:
+                    st.error("ID not recognized.")
             
             c1, c2 = st.columns(2)
             with c1:
                 if st.button("🔵 Quick Google Access", key="btn_google_login"):
                     g_email = "dancer.google@gmail.com"
                     if g_email not in users:
-                        users[g_email] = { "password": "google_oauth_user", "preferred_name": "Dancer", "dance_style": "Other", "verified": True, "avatar": "✨"}
+                        users[g_email] = {
+                            "password": "google_oauth_user", "preferred_name": "Dancer", 
+                            "dance_style": "Other", "verified": True, "avatar": "✨",
+                            "email_reminders": True
+                        }
                         save_json(users, USER_DB_FILE)
                     st.session_state.logged_in = True
                     st.session_state.user_email = g_email
@@ -260,22 +337,27 @@ if not st.session_state.logged_in:
             new_pass = st.text_input("Set Key", type="password", placeholder="Choose wisely", key="su_pass")
             pref_name = st.text_input("Preferred Name", placeholder="e.g., Mia Rao", key="su_prefname")
             primary_style = st.selectbox("Core Style:", DANCE_STYLES, key="su_style")
+            want_reminders = st.checkbox("Receive daily email reminders to log my journal", value=True, key="su_reminders")
             
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("REQUEST ACCESS CODE 📩", key="btn_signup_submit"):
                 if new_email and new_pass and pref_name:
-                    if new_email in users: st.error("ID already exists.")
+                    if new_email in users:
+                        st.error("ID already exists.")
                     else:
                         code = generate_code()
                         st.session_state.verification_code = code
                         st.session_state.pending_user = {
                             "email": new_email, "password": new_pass, "preferred_name": pref_name,
-                            "dance_style": primary_style, "verified": False, "avatar": "🩰"
+                            "dance_style": primary_style, "verified": False, "avatar": "🩰",
+                            "email_reminders": want_reminders
                         }
-                        simulate_email(new_email, code, "verification")
-                        st.session_state.auth_page = "verify_signup"
-                        st.rerun()
-                else: st.error("Please fill all fields.")
+                        with st.spinner("Sending verification email..."):
+                            if send_real_email(new_email, code, "verification"):
+                                st.session_state.auth_page = "verify_signup"
+                                st.rerun()
+                else:
+                    st.error("Please fill all fields.")
                     
             if st.button("Back to Login", key="btn_back_login"):
                 st.session_state.auth_page = "login"
@@ -296,7 +378,8 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.user_email = pending["email"]
                     st.rerun()
-                else: st.error("Invalid code.")
+                else:
+                    st.error("Invalid code.")
 
         elif st.session_state.auth_page == "forgot_request":
             st.markdown("<h3 style='text-align: center;'>Reset Key</h3>", unsafe_allow_html=True)
@@ -307,10 +390,12 @@ if not st.session_state.logged_in:
                     code = generate_code()
                     st.session_state.verification_code = code
                     st.session_state.user_email = reset_email
-                    simulate_email(reset_email, code, "password reset")
-                    st.session_state.auth_page = "forgot_verify"
-                    st.rerun()
-                else: st.error("ID not found.")
+                    with st.spinner("Sending reset code..."):
+                        if send_real_email(reset_email, code, "password reset"):
+                            st.session_state.auth_page = "forgot_verify"
+                            st.rerun()
+                else:
+                    st.error("ID not found.")
             if st.button("Back", key="btn_back_login_fp"):
                 st.session_state.auth_page = "login"
                 st.rerun()
@@ -328,7 +413,8 @@ if not st.session_state.logged_in:
                         st.success("Updated! Please sign in.")
                         st.session_state.auth_page = "login"
                         st.rerun()
-                else: st.error("Invalid code.")
+                else:
+                    st.error("Invalid code.")
         
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
@@ -354,9 +440,15 @@ with st.sidebar:
         new_avatar = st.selectbox("Avatar:", AVATAR_OPTIONS, index=AVATAR_OPTIONS.index(user_profile.get("avatar", "🩰")) if user_profile.get("avatar") in AVATAR_OPTIONS else 0)
         new_pref_name = st.text_input("Preferred Name:", value=user_profile.get("preferred_name", ""))
         new_style = st.selectbox("Primary Style:", DANCE_STYLES, index=DANCE_STYLES.index(user_profile.get("dance_style", "Other")) if user_profile.get("dance_style") in DANCE_STYLES else 0)
+        new_reminders = st.checkbox("Receive daily email reminders to log journal", value=user_profile.get("email_reminders", True))
         
         if st.button("SAVE PROFILE CHANGES"):
-            user_profile.update({"avatar": new_avatar, "preferred_name": new_pref_name, "dance_style": new_style})
+            user_profile.update({
+                "avatar": new_avatar, 
+                "preferred_name": new_pref_name, 
+                "dance_style": new_style,
+                "email_reminders": new_reminders
+            })
             users_db[st.session_state.user_email] = user_profile
             save_json(users_db, USER_DB_FILE)
             st.toast("Profile updated aesthetically.", icon="✨")
@@ -469,6 +561,19 @@ elif st.session_state.active_section == "stress":
             })
             save_json(vault_db_items, DB_FILE)
             st.toast("Reflection vaulted.", icon="🧠")
+
+    st.divider()
+
+    # Instant test reminder option
+    st.subheader("📩 Daily Email Reminders")
+    c_rem1, c_rem2 = st.columns([2, 1])
+    with c_rem1:
+        st.caption("Daily journal reminder emails are sent every evening at 8:00 PM.")
+    with c_rem2:
+        if st.button("SEND TEST REMINDER 📩", key="btn_test_reminder"):
+            with st.spinner("Sending test reminder..."):
+                if send_real_email(st.session_state.user_email, "", purpose="journal_reminder"):
+                    st.success("Test reminder email sent to your inbox!")
 
     st.divider()
     
