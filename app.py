@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import os
 import json
+import random
+import smtplib
+from email.mime.text import MIMEText
 from datetime import datetime
 from streamlit_calendar import calendar
 
@@ -52,6 +55,16 @@ def delete_entry(entry_id):
             updated_db.append(item)
     save_db(updated_db)
 
+# Helper function to generate a 6-digit verification code
+def generate_code():
+    return str(random.randint(100000, 999999))
+
+# Helper function to simulate/send verification email
+def send_verification_email(to_email, code, purpose="verification"):
+    # In production, configure standard SMTP parameters or secrets
+    # For local testing, code is displayed in an alert and simulated securely
+    st.toast(f"📧 [Email Simulation] {purpose.capitalize()} code for {to_email}: {code}", icon="📩")
+
 # ==========================================
 # CUSTOM AESTHETIC STYLING (Berry Calming Palette)
 # ==========================================
@@ -85,25 +98,6 @@ st.markdown("""
         text-align: center;
         margin-top: -15px;
         margin-bottom: 25px;
-    }
-
-    /* Reference Card Styling for Login & Signup */
-    .login-card {
-        background-color: #FFFFFF;
-        padding: 40px 35px;
-        border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(74, 62, 61, 0.15);
-        margin: auto;
-        max-width: 450px;
-        text-align: center;
-    }
-
-    .login-card h2 {
-        font-family: 'Cinzel', serif !important;
-        color: #4A3E3D !important;
-        font-size: 32px;
-        font-weight: 700;
-        margin-bottom: 30px;
     }
 
     /* Form Labels & Underline Fields */
@@ -151,31 +145,6 @@ st.markdown("""
         color: #FFFFFF !important;
         transform: translateY(-2px);
     }
-
-    .social-btn {
-        display: inline-block;
-        width: 45px;
-        height: 45px;
-        line-height: 45px;
-        border-radius: 50%;
-        background-color: #EDDFD9;
-        color: #CE8127;
-        font-size: 20px;
-        margin: 0 8px;
-        cursor: pointer;
-        transition: transform 0.2s ease;
-    }
-
-    .social-btn:hover {
-        transform: scale(1.1);
-        background-color: #D8BFCE;
-    }
-
-    .streamlit-expanderHeader {
-        background-color: #D8BFCE !important;
-        color: #4A3E3D !important;
-        border-radius: 10px !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -188,11 +157,15 @@ if "user_email" not in st.session_state:
     st.session_state.user_email = ""
 if "auth_page" not in st.session_state:
     st.session_state.auth_page = "login"
+if "verification_code" not in st.session_state:
+    st.session_state.verification_code = ""
+if "pending_user" not in st.session_state:
+    st.session_state.pending_user = {}
 
 DANCE_STYLES = ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Jazz", "Tap", "Other"]
 AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
 
-# If not logged in, render Auth Gateway in Reference Format
+# If not logged in, render Auth Gateway
 if not st.session_state.logged_in:
     st.markdown("<h1>🩰 DanceVault</h1>", unsafe_allow_html=True)
     st.markdown("<div class='script-subtitle'>Dance. Track. Breathe. Stretch. Repeat.</div>", unsafe_allow_html=True)
@@ -201,13 +174,9 @@ if not st.session_state.logged_in:
     users = load_users()
     
     with col_center:
-        # LOGIN SCREEN (Matching Reference Formatting)
+        # LOGIN SCREEN
         if st.session_state.auth_page == "login":
-            st.markdown("""
-                <div style='text-align: center; margin-bottom: 20px;'>
-                    <h2 style='font-family: Cinzel, serif; color: #4A3E3D;'>Login</h2>
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Login</h2>", unsafe_allow_html=True)
             
             email_input = st.text_input("Username / Email", placeholder="Type your email", key="si_email")
             pass_input = st.text_input("Password", type="password", placeholder="Type your password", key="si_pass")
@@ -215,51 +184,50 @@ if not st.session_state.logged_in:
             col_fp1, col_fp2 = st.columns([1, 1])
             with col_fp2:
                 if st.button("Forgot password?", key="btn_to_fp"):
-                    st.session_state.auth_page = "forgot"
+                    st.session_state.auth_page = "forgot_request"
                     st.rerun()
             
             if st.button("LOGIN", key="btn_login_submit"):
-                if email_input in users and users[email_input]["password"] == pass_input:
-                    st.session_state.logged_in = True
-                    st.session_state.user_email = email_input
-                    st.success("Welcome back!")
-                    st.rerun()
+                if email_input in users:
+                    if not users[email_input].get("verified", True):
+                        st.error("Please verify your email address first.")
+                    elif users[email_input]["password"] == pass_input:
+                        st.session_state.logged_in = True
+                        st.session_state.user_email = email_input
+                        st.success("Welcome back!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid password.")
                 else:
-                    st.error("Invalid email or password.")
+                    st.error("Invalid email address.")
             
-            st.markdown("<p style='text-align: center; color: #7A6A68; font-size: 12px; margin-top: 25px;'>Or Sign In Using</p>", unsafe_allow_html=True)
-            
-            col_soc1, col_soc2, col_soc3 = st.columns([1, 1, 1])
-            with col_soc2:
-                if st.button("🔵 Google", key="btn_google_login"):
-                    google_email = "dancer.google@gmail.com"
-                    if google_email not in users:
-                        users[google_email] = {
-                            "password": "google_oauth_user",
-                            "full_name": "Google User",
-                            "preferred_name": "Dancer",
-                            "dance_style": "Bharathanatyam",
-                            "daily_reminder": True,
-                            "avatar": "🩰"
-                        }
-                        save_users(users)
-                    st.session_state.logged_in = True
-                    st.session_state.user_email = google_email
-                    st.success("Authenticated with Google!")
-                    st.rerun()
+            st.markdown("<p style='text-align: center; color: #7A6A68; font-size: 12px; margin-top: 20px;'>Or Sign In Using</p>", unsafe_allow_html=True)
+            if st.button("🔵 Google Sign-In", key="btn_google_login"):
+                google_email = "dancer.google@gmail.com"
+                if google_email not in users:
+                    users[google_email] = {
+                        "password": "google_oauth_user",
+                        "full_name": "Google User",
+                        "preferred_name": "Dancer",
+                        "dance_style": "Bharathanatyam",
+                        "daily_reminder": True,
+                        "avatar": "🩰",
+                        "verified": True
+                    }
+                    save_users(users)
+                st.session_state.logged_in = True
+                st.session_state.user_email = google_email
+                st.success("Authenticated with Google!")
+                st.rerun()
                     
-            st.markdown("<p style='text-align: center; color: #7A6A68; font-size: 12px; margin-top: 30px;'>Or Sign Up Using</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #7A6A68; font-size: 12px; margin-top: 25px;'>New to DanceVault?</p>", unsafe_allow_html=True)
             if st.button("SIGN UP", key="btn_to_signup"):
                 st.session_state.auth_page = "signup"
                 st.rerun()
 
         # SIGN UP SCREEN
         elif st.session_state.auth_page == "signup":
-            st.markdown("""
-                <div style='text-align: center; margin-bottom: 20px;'>
-                    <h2 style='font-family: Cinzel, serif; color: #4A3E3D;'>Sign Up</h2>
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Sign Up</h2>", unsafe_allow_html=True)
             
             new_email = st.text_input("Email Address", placeholder="Type your email", key="su_email")
             new_pass = st.text_input("Password", type="password", placeholder="Create password", key="su_pass")
@@ -268,23 +236,25 @@ if not st.session_state.logged_in:
             primary_style = st.selectbox("Primary Dance Style:", DANCE_STYLES, key="su_style")
             daily_reminder = st.checkbox("Enable daily log reminders", value=True, key="su_reminder")
             
-            if st.button("CREATE ACCOUNT", key="btn_signup_submit"):
+            if st.button("SEND VERIFICATION CODE 📩", key="btn_signup_submit"):
                 if new_email and new_pass and full_name and pref_name:
                     if new_email in users:
                         st.error("Account already exists. Please login.")
                     else:
-                        users[new_email] = {
+                        code = generate_code()
+                        st.session_state.verification_code = code
+                        st.session_state.pending_user = {
+                            "email": new_email,
                             "password": new_pass,
                             "full_name": full_name,
                             "preferred_name": pref_name,
                             "dance_style": primary_style,
                             "daily_reminder": daily_reminder,
-                            "avatar": "🩰"
+                            "avatar": "🩰",
+                            "verified": False
                         }
-                        save_users(users)
-                        st.session_state.logged_in = True
-                        st.session_state.user_email = new_email
-                        st.success("Account created!")
+                        send_verification_email(new_email, code, "account verification")
+                        st.session_state.auth_page = "verify_signup"
                         st.rerun()
                 else:
                     st.error("Please fill out all fields.")
@@ -293,23 +263,74 @@ if not st.session_state.logged_in:
                 st.session_state.auth_page = "login"
                 st.rerun()
 
-        # FORGOT PASSWORD SCREEN
-        elif st.session_state.auth_page == "forgot":
-            st.markdown("""
-                <div style='text-align: center; margin-bottom: 20px;'>
-                    <h2 style='font-family: Cinzel, serif; color: #4A3E3D;'>Reset Password</h2>
-                </div>
-            """, unsafe_allow_html=True)
+        # VERIFY SIGN UP CODE SCREEN
+        elif st.session_state.auth_page == "verify_signup":
+            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Verify Your Email</h2>", unsafe_allow_html=True)
+            st.info(f"A 6-digit verification code was sent to **{st.session_state.pending_user.get('email')}**.")
             
-            reset_email = st.text_input("Registered Email", placeholder="Type your email", key="fp_email")
-            if st.button("RECOVER PASSWORD", key="btn_fp_submit"):
-                if reset_email in users:
-                    st.info(f"Your password is: **{users[reset_email]['password']}**")
+            code_input = st.text_input("Enter 6-Digit Code", placeholder="e.g. 123456", key="v_code")
+            
+            if st.button("VERIFY & COMPLETE SIGN UP ✨", key="btn_complete_signup"):
+                if code_input.strip() == st.session_state.verification_code:
+                    pending = st.session_state.pending_user
+                    pending["verified"] = True
+                    users[pending["email"]] = pending
+                    save_users(users)
+                    
+                    st.session_state.logged_in = True
+                    st.session_state.user_email = pending["email"]
+                    st.success("Email verified successfully! Welcome to DanceVault.")
+                    st.rerun()
                 else:
-                    st.error("Email not found.")
+                    st.error("Invalid verification code. Please check your inbox and try again.")
+                    
+            if st.button("Back", key="btn_back_su"):
+                st.session_state.auth_page = "signup"
+                st.rerun()
+
+        # FORGOT PASSWORD - REQUEST CODE
+        elif st.session_state.auth_page == "forgot_request":
+            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Reset Password</h2>", unsafe_allow_html=True)
+            
+            reset_email = st.text_input("Enter Registered Email", placeholder="Type your email", key="fp_email")
+            if st.button("SEND RESET CODE 📩", key="btn_fp_submit"):
+                if reset_email in users:
+                    code = generate_code()
+                    st.session_state.verification_code = code
+                    st.session_state.user_email = reset_email
+                    send_verification_email(reset_email, code, "password reset")
+                    st.session_state.auth_page = "forgot_verify"
+                    st.rerun()
+                else:
+                    st.error("Email not found in system.")
                     
             if st.button("Back to Login", key="btn_back_login_fp"):
                 st.session_state.auth_page = "login"
+                st.rerun()
+
+        # FORGOT PASSWORD - VERIFY CODE & SET NEW PASSWORD
+        elif st.session_state.auth_page == "forgot_verify":
+            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Set New Password</h2>", unsafe_allow_html=True)
+            st.info(f"Enter the 6-digit reset code sent to **{st.session_state.user_email}**.")
+            
+            code_input = st.text_input("Enter 6-Digit Reset Code", placeholder="e.g. 123456", key="reset_code")
+            new_password_input = st.text_input("Enter New Password", type="password", placeholder="Type new password", key="new_fp_pass")
+            
+            if st.button("UPDATE PASSWORD 🔑", key="btn_update_pass"):
+                if code_input.strip() == st.session_state.verification_code:
+                    if new_password_input:
+                        users[st.session_state.user_email]["password"] = new_password_input
+                        save_users(users)
+                        st.success("Password updated successfully! Please sign in.")
+                        st.session_state.auth_page = "login"
+                        st.rerun()
+                    else:
+                        st.error("Please enter a new password.")
+                else:
+                    st.error("Invalid reset code.")
+                    
+            if st.button("Back", key="btn_back_fp_req"):
+                st.session_state.auth_page = "forgot_request"
                 st.rerun()
 
     st.stop()
