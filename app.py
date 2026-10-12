@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import json
 from datetime import datetime
+from streamlit_calendar import calendar
 
 # Page Configuration
 st.set_page_config(page_title="DanceVault", page_icon="🩰", layout="wide")
@@ -91,7 +92,7 @@ st.markdown("<div class='script-subtitle'>Dance. Track. Breathe. Stretch. Repeat
 if "active_section" not in st.session_state:
     st.session_state.active_section = "choreo"
 
-# Section Navigation Buttons (Acts like custom section tabs)
+# Section Navigation Buttons
 nav_col1, nav_col2, nav_col3 = st.columns(3)
 with nav_col1:
     if st.button("📹 Choreography & Calendar"):
@@ -105,8 +106,20 @@ with nav_col3:
 
 st.divider()
 
+# Calendar Configuration for Visual Grid
+calendar_options = {
+    "editable": False,
+    "selectable": True,
+    "headerToolbar": {
+        "left": "prev,next today",
+        "center": "title",
+        "right": "dayGridMonth"
+    },
+    "initialView": "dayGridMonth"
+}
+
 # ==========================================
-# SECTION 1: CHOREOGRAPHY + INTERACTIVE CALENDAR
+# SECTION 1: CHOREOGRAPHY + FULL CALENDAR GRID
 # ==========================================
 if st.session_state.active_section == "choreo":
     st.header("Choreography & Media Vault")
@@ -145,16 +158,34 @@ if st.session_state.active_section == "choreo":
             st.error("Please provide a piece title and upload a media file.")
             
     st.divider()
-    st.subheader("📅 Interactive Choreo Calendar & Viewer")
+    st.subheader("📅 Rehearsal Calendar Grid")
+    st.caption("Dates with uploaded choreography will show a 📹 icon. Click any date or event to view entries.")
+    
     db = load_db()
     choreo_items = [x for x in db if x.get("type") == "choreo"]
     
-    if choreo_items:
-        selected_calendar_date = st.date_input("Select a Date on the Calendar to View Choreo:", value=datetime.now(), key="cal_choreo_interactive")
+    # Build events for the visual calendar grid
+    events = []
+    for item in choreo_items:
+        events.append({
+            "title": f"📹 {item['piece']} ({item['style']})",
+            "start": item["date"],
+            "end": item["date"],
+            "color": "#D893A4"
+        })
         
-        filtered_choreo = [item for item in choreo_items if item["date"] == str(selected_calendar_date)]
-        
-        st.markdown(f"**Showing choreography records for: {selected_calendar_date}**")
+    cal_response = calendar(events=events, options=calendar_options, key="choreo_visual_calendar")
+    
+    # Check if a date or event was clicked on the calendar
+    selected_date = None
+    if cal_response.get("dateClick"):
+        selected_date = cal_response["dateClick"]["date"].split("T")[0]
+    elif cal_response.get("eventClick"):
+        selected_date = cal_response["eventClick"]["event"]["start"].split("T")[0]
+
+    if selected_date:
+        st.subheader(f"Entries for {selected_date}")
+        filtered_choreo = [item for item in choreo_items if item["date"] == selected_date]
         if filtered_choreo:
             for item in filtered_choreo:
                 with st.expander(f"🎵 {item['piece']} - {item['style']} ({item['date']})"):
@@ -163,12 +194,10 @@ if st.session_state.active_section == "choreo":
                     else:
                         st.audio(item['path'])
         else:
-            st.info("No choreography media logged on this specific calendar date.")
-    else:
-        st.info("No choreography saved yet.")
+            st.info("No choreography recorded on this date.")
 
 # ==========================================
-# SECTION 2: STRESS JOURNAL & BREATHING
+# SECTION 2: STRESS JOURNAL + FULL CALENDAR GRID
 # ==========================================
 elif st.session_state.active_section == "stress":
     st.header("Mental Stress Journal & Neuro-Breathing Lounge")
@@ -235,3 +264,87 @@ elif st.session_state.active_section == "stress":
     }, 4000);
     </script>
     """
+    st.components.v1.html(breathing_html, height=380)
+
+    st.divider()
+    st.subheader("📅 Journal Calendar Grid")
+    st.caption("Dates with logged stress or journal entries will show a 🧠 icon. Click any date or event to review.")
+    
+    db = load_db()
+    stress_items = [x for x in db if x.get("type") == "stress"]
+    
+    stress_events = []
+    for item in stress_items:
+        stress_events.append({
+            "title": f"🧠 Stress: {item['stress_level']}/10",
+            "start": item["date"],
+            "end": item["date"],
+            "color": "#CE8127"
+        })
+        
+    cal_response_stress = calendar(events=stress_events, options=calendar_options, key="stress_visual_calendar")
+    
+    selected_stress_date = None
+    if cal_response_stress.get("dateClick"):
+        selected_stress_date = cal_response_stress["dateClick"]["date"].split("T")[0]
+    elif cal_response_stress.get("eventClick"):
+        selected_stress_date = cal_response_stress["eventClick"]["event"]["start"].split("T")[0]
+
+    if selected_stress_date:
+        st.subheader(f"Journal Entries for {selected_stress_date}")
+        filtered_stress = [item for item in stress_items if item["date"] == selected_stress_date]
+        if filtered_stress:
+            for item in filtered_stress:
+                st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
+                st.write(f"*Journal Notes:* {item['notes']}")
+                st.divider()
+        else:
+            st.info("No journal entries recorded on this date.")
+
+# ==========================================
+# SECTION 3: PAIN & VISUAL AI RECOVERY
+# ==========================================
+elif st.session_state.active_section == "pain":
+    st.header("Physical Pain & Visual AI Recovery Protocols")
+    st.write("Select a specific area of somatic tension to view step-by-step instructions accompanied by reference illustrations.")
+    
+    ai_recommendations = {
+        "Plantar Fascia / Arch": {
+            "mechanism": "High impact shock absorption stress (common in classical foot-stamping).",
+            "protocol": "1. Myofascial release using a lacrosse ball under the medial longitudinal arch (2 mins).\n2. Eccentric calf drops to unload insertion points.",
+            "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80"
+        },
+        "Achilles / Calf": {
+            "mechanism": "Repetitive rebound acceleration and plantarflexion overload.",
+            "protocol": "1. Soleus-focused bent-knee wall stretches.\n2. Dynamic ankle dorsiflexion mobility drills.",
+            "image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80"
+        },
+        "Lumbar Spine (Lower Back)": {
+            "mechanism": "Compensatory extension strain during postural alignment or core fatigue.",
+            "protocol": "1. Cat-Camel spinal articulation to reset proprioception.\n2. Dead-bug core stabilization activation.",
+            "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80"
+        },
+        "Hip Flexors / Hamstrings": {
+            "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
+            "protocol": "1. 90/90 hip transitions for internal/external rotation.\n2. PNF contract-relax stretching for hamstrings.",
+            "image": "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?auto=format&fit=crop&w=600&q=80"
+        },
+        "Cervical Spine / Neck & Shoulders": {
+            "mechanism": "Sympathetic nervous system elevation translated into upper trapezius tension.",
+            "protocol": "1. Vagus nerve stimulation: 4-7-8 diaphragmatic breathing block.\n2. Scapular retraction and thoracic spine rolling.",
+            "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80"
+        }
+    }
+    
+    selected_pain = st.selectbox("Select Active Pain Area:", list(ai_recommendations.keys()))
+    
+    if st.button("Generate Visual Recovery Protocol ⚙️", key="btn_pain"):
+        data = ai_recommendations[selected_pain]
+        st.markdown(f"### 🎯 Target System: {selected_pain}")
+        
+        col_img, col_text = st.columns([1, 1.5])
+        with col_img:
+            st.image(data["image"], caption=f"Recommended Form Reference for {selected_pain}", use_container_width=True)
+        with col_text:
+            st.info(f"**Biomechanical Analysis:** {data['mechanism']}")
+            st.success(f"**Step-by-Step Action Protocol:**\n{data['protocol']}")
