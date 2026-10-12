@@ -238,6 +238,22 @@ def geocode_zipcode_details(zipcode):
         pass
     return None, None, None, None
 
+def reverse_geocode_coordinates(lat, lon):
+    try:
+        headers = {"User-Agent": "DanceVault/1.0"}
+        url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json&addressdetails=1"
+        resp = requests.get(url, headers=headers, timeout=5)
+        if resp.status_code == 200:
+            res = resp.json()
+            addr = res.get("address", {})
+            city = addr.get("city") or addr.get("town") or addr.get("village") or addr.get("county") or "Local Area"
+            state = addr.get("state", "US")
+            postcode = addr.get("postcode", "Local")
+            return city, state, postcode
+    except Exception:
+        pass
+    return "Detected Area", "US", "Local"
+
 # REAL EMAIL SENDER FUNCTION VIA SMTP
 def send_real_email(to_email, code_or_name, purpose="verification"):
     try:
@@ -750,21 +766,23 @@ elif st.session_state.active_section == "pain":
 
     with recovery_tab2:
         st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
-        st.write("Default location is automatically detected. Enter a zipcode below to update all clinic addresses, numbers, and map locations.")
+        st.write("The map defaults to your extracted user location services and is overriden if and only if a zipcode is entered below.")
 
-        # Default Location Detection (Fallback: NYC)
-        map_lat, map_lon = 40.7380, -73.9800
-        city_name = "New York"
-        state_name = "NY"
-        curr_zip = "10003"
+        # 1. EXTRACT USER LOCATION SERVICES (DEFAULT LOCATION)
+        user_loc = get_geolocation()
+        if user_loc and "coords" in user_loc:
+            map_lat = user_loc["coords"]["latitude"]
+            map_lon = user_loc["coords"]["longitude"]
+            city_name, state_name, curr_zip = reverse_geocode_coordinates(map_lat, map_lon)
+            location_source_msg = f"📍 Extracted User Location Services ({city_name}, {state_name})"
+        else:
+            # Fallback only if location permissions are not granted by browser
+            map_lat, map_lon = 40.7380, -73.9800
+            city_name, state_name, curr_zip = "New York", "NY", "10003"
+            location_source_msg = "📍 Default Location (New York, NY)"
 
-        loc = get_geolocation()
-        if loc and "coords" in loc:
-            map_lat = loc["coords"]["latitude"]
-            map_lon = loc["coords"]["longitude"]
-
-        # Zipcode Search Input
-        input_zip = st.text_input("Enter Zipcode to Override Location & Update Clinics:", placeholder="e.g. 10003, 76201, 90210, or 60601")
+        # 2. OVERRIDE IF AND ONLY IF A ZIPCODE IS ENTERED
+        input_zip = st.text_input("Enter Zipcode to Override User Location Services:", placeholder="e.g. 10003, 76201, 90210, or 60601")
         if input_zip and input_zip.strip():
             z_lat, z_lon, z_city, z_state = geocode_zipcode_details(input_zip.strip())
             if z_lat and z_lon:
@@ -772,11 +790,12 @@ elif st.session_state.active_section == "pain":
                 city_name = z_city
                 state_name = z_state
                 curr_zip = input_zip.strip()
-                st.success(f"Updated all clinic locations, addresses, and markers to Zipcode {curr_zip} ({city_name}, {state_name})!")
+                st.success(f"Overrode user location! Updated clinics and map markers to Zipcode {curr_zip} ({city_name}, {state_name})")
             else:
-                st.error("Zipcode not found. Displaying default detected area.")
+                st.error("Zipcode not found. Retaining extracted user location services.")
+                st.info(location_source_msg)
         else:
-            st.info(f"📍 Currently displaying clinics for default location ({city_name}, {state_name}).")
+            st.info(location_source_msg)
 
         # Dynamically Generated Localized Clinic Pin Data
         clinic_data = [
@@ -925,7 +944,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
-    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. The map defaults to your automatically detected browser location. Entering a 5-digit zipcode instantly overrides the location, re-centers the map, and updates all 5 clinic street addresses, phone numbers, and profile details to match that area.
+    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. The map extracts user location services as default coordinates and is overriden if and only if a 5-digit zipcode is entered.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style (chosen from 50 styles), or reminder preferences.
