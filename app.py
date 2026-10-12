@@ -28,16 +28,14 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Great+Vibes&family=Cinzel:wght@400..700&display=swap');
 
-    /* Global Background & Base Font (Yana Regular / Taberna Serif Aesthetic) */
     .stApp {
         background-color: #EDDFD9;
         color: #4A3E3D;
-        font-family: 'Playfair Display', 'Yana Regular', 'Taberna Serif', Georgia, serif;
+        font-family: 'Playfair Display', Georgia, serif;
     }
 
-    /* Titles & Headings */
     h1 {
-        font-family: 'Cinzel', 'Taberna Serif', serif !important;
+        font-family: 'Cinzel', serif !important;
         color: #CE8127 !important;
         text-align: center;
         font-weight: 600 !important;
@@ -49,9 +47,8 @@ st.markdown("""
         color: #D893A4 !important;
     }
 
-    /* Subtitle Tagline (Bickham Script Pro Aesthetic) */
     .script-subtitle {
-        font-family: 'Great Vibes', 'Bickham Script Pro', cursive;
+        font-family: 'Great Vibes', cursive;
         font-size: 28px !important;
         color: #D893A4;
         text-align: center;
@@ -59,7 +56,6 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* Buttons */
     .stButton>button {
         background-color: #D893A4 !important;
         color: #FFFFFF !important;
@@ -70,6 +66,7 @@ st.markdown("""
         padding: 8px 22px !important;
         transition: all 0.3s ease;
         box-shadow: 0 4px 10px rgba(216, 147, 164, 0.3);
+        width: 100%;
     }
 
     .stButton>button:hover {
@@ -78,52 +75,40 @@ st.markdown("""
         transform: translateY(-2px);
     }
 
-    /* Tabs Styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 15px;
-        justify-content: center;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background-color: #D8BFCE !important;
-        color: #4A3E3D !important;
-        border-radius: 12px 12px 0px 0px !important;
-        padding: 10px 20px !important;
-        font-family: 'Cinzel', serif !important;
-        font-weight: 600;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background-color: #E5A38F !important;
-        color: #FFFFFF !important;
-    }
-
-    /* Expanders & Cards */
     .streamlit-expanderHeader {
         background-color: #D8BFCE !important;
         color: #4A3E3D !important;
         border-radius: 10px !important;
-        font-family: 'Playfair Display', serif !important;
-    }
-
-    /* Slider / Input Accents */
-    div[data-baseweb="slider"] {
-        color: #CE8127 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Custom App Title Banner
+# App Title & Tagline
 st.markdown("<h1>🩰 DanceVault</h1>", unsafe_allow_html=True)
 st.markdown("<div class='script-subtitle'>Dance. Track. Breathe. Stretch. Repeat.</div>", unsafe_allow_html=True)
 
-# Independent Standalone Tabs
-tab_choreo, tab_stress, tab_pain = st.tabs(["📹 Log Choreography & Calendar", "🧠 Stress Tracker & Breathing Lounge", "🧘 Pain & Visual AI Recovery"])
+# Initialize Session State for Section Navigation
+if "active_section" not in st.session_state:
+    st.session_state.active_section = "choreo"
+
+# Section Navigation Buttons (Acts like custom section tabs)
+nav_col1, nav_col2, nav_col3 = st.columns(3)
+with nav_col1:
+    if st.button("📹 Choreography & Calendar"):
+        st.session_state.active_section = "choreo"
+with nav_col2:
+    if st.button("🧠 Stress Journal & Breathing"):
+        st.session_state.active_section = "stress"
+with nav_col3:
+    if st.button("🧘 Pain & Visual AI Recovery"):
+        st.session_state.active_section = "pain"
+
+st.divider()
 
 # ==========================================
-# TAB 1: CHOREOGRAPHY + CALENDAR
+# SECTION 1: CHOREOGRAPHY + INTERACTIVE CALENDAR
 # ==========================================
-with tab_choreo:
+if st.session_state.active_section == "choreo":
     st.header("Choreography & Media Vault")
     
     col1, col2 = st.columns(2)
@@ -160,40 +145,40 @@ with tab_choreo:
             st.error("Please provide a piece title and upload a media file.")
             
     st.divider()
-    st.subheader("📅 Choreo Calendar & Archive Viewer")
+    st.subheader("📅 Interactive Choreo Calendar & Viewer")
     db = load_db()
-    choreo_items = [x for x in db if x.get("type") == "choreo"]
+    choreo_items = [x for x in db if x.get("type"] == "choreo"]
     
     if choreo_items:
-        available_dates = sorted(list(set([item["date"] for item in choreo_items])))
-        selected_calendar_date = st.date_input("Filter Choreo Logs by Date:", value=datetime.strptime(available_dates[-1], "%Y-%m-%d").date() if available_dates else datetime.now(), key="cal_choreo")
+        # Interactive calendar date picker to pull up exact day's choreo records
+        selected_calendar_date = st.date_input("Select a Date on the Calendar to View Choreo:", value=datetime.now(), key="cal_choreo_interactive")
         
         filtered_choreo = [item for item in choreo_items if item["date"] == str(selected_calendar_date)]
         
-        st.markdown(f"**Showing choreography entries for: {selected_calendar_date}**")
+        st.markdown(f"**Showing choreography records for: {selected_calendar_date}**")
         if filtered_choreo:
             for item in filtered_choreo:
-                with st.expander(f"🎵 {item['piece']} - {item['style']}"):
+                with st.expander(f"🎵 {item['piece']} - {item['style']} ({item['date']})"):
                     if item['file_type'] in ['mp4', 'mov', 'avi']:
                         st.video(item['path'])
                     else:
                         st.audio(item['path'])
         else:
-            st.info("No choreography media logged on this specific date.")
+            st.info("No choreography media logged on this specific calendar date.")
     else:
         st.info("No choreography saved yet.")
 
 # ==========================================
-# TAB 2: STRESS TRACKER + BREATHING LOUNGE
+# SECTION 2: STRESS JOURNAL & BREATHING
 # ==========================================
-with tab_stress:
-    st.header("Mental Stress Tracker & Neuro-Breathing Lounge")
+elif st.session_state.active_section == "stress":
+    st.header("Mental Stress Journal & Neuro-Breathing Lounge")
     
     s_date = st.date_input("Log Date:", datetime.now(), key="s_date")
     s_level = st.slider("Mental Strain / Anxiety Level (1-10):", 1, 10, 5, key="s_level")
-    s_notes = st.text_area("Mental State Reflection / Thoughts to Unload:", placeholder="e.g., Felt nervous about performance timing...", key="s_notes")
+    s_notes = st.text_area("Mental State Reflection / Journal Entry:", placeholder="e.g., Felt pressured during complex footwork patterns...", key="s_notes")
     
-    if st.button("Log Mental Stress 🧠", key="btn_stress"):
+    if st.button("Save Journal Entry 🧠", key="btn_stress"):
         db = load_db()
         db.append({
             "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
@@ -203,13 +188,13 @@ with tab_stress:
             "notes": s_notes
         })
         save_db(db)
-        st.success("Stress log saved successfully!")
+        st.success("Journal entry saved successfully!")
         
     st.divider()
     
-    # Styled Breathing Lounge using Palettes (#E5A38F, #D8BFCE, #CE8127)
+    # Breathing Lounge Visualizer
     st.subheader("🌬️ Optional Neuro-Breathing & Calm Audio Lounge")
-    st.write("Feeling overwhelmed or stressed post-rehearsal? Use this interactive visualizer to synchronize your breathing with calming ambient sound.")
+    st.write("Use this interactive visualizer to synchronize your breathing with calming ambient sound.")
     
     breathing_html = """
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #D8BFCE; padding: 25px; border-radius: 15px; color: #4A3E3D; text-align: center;">
@@ -254,9 +239,69 @@ with tab_stress:
     st.components.v1.html(breathing_html, height=380)
 
     st.divider()
-    st.subheader("📅 Stress Calendar & Historical View")
+    st.subheader("📅 Interactive Journal Calendar & Historical View")
     db = load_db()
     stress_items = [x for x in db if x.get("type") == "stress"]
     
     if stress_items:
-        s_dates = sorted(list(set([item["date"] for item in stress_items])))
+        selected_journal_date = st.date_input("Select a Date on the Calendar to View Journal Entries:", value=datetime.now(), key="cal_stress_interactive")
+        
+        filtered_stress = [item for item in stress_items if item["date"] == str(selected_journal_date)]
+        
+        if filtered_stress:
+            for item in filtered_stress:
+                st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
+                st.write(f"*Journal Notes:* {item['notes']}")
+                st.divider()
+        else:
+            st.info("No journal entries recorded on this specific calendar date.")
+    else:
+        st.info("No journal entries recorded yet.")
+
+# ==========================================
+# SECTION 3: PAIN & VISUAL AI RECOVERY
+# ==========================================
+elif st.session_state.active_section == "pain":
+    st.header("Physical Pain & Visual AI Recovery Protocols")
+    st.write("Select a specific area of somatic tension to view step-by-step instructions accompanied by reference illustrations.")
+    
+    ai_recommendations = {
+        "Plantar Fascia / Arch": {
+            "mechanism": "High impact shock absorption stress (common in classical foot-stamping).",
+            "protocol": "1. Myofascial release using a lacrosse ball under the medial longitudinal arch (2 mins).\n2. Eccentric calf drops to unload insertion points.",
+            "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80"
+        },
+        "Achilles / Calf": {
+            "mechanism": "Repetitive rebound acceleration and plantarflexion overload.",
+            "protocol": "1. Soleus-focused bent-knee wall stretches.\n2. Dynamic ankle dorsiflexion mobility drills.",
+            "image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80"
+        },
+        "Lumbar Spine (Lower Back)": {
+            "mechanism": "Compensatory extension strain during postural alignment or core fatigue.",
+            "protocol": "1. Cat-Camel spinal articulation to reset proprioception.\n2. Dead-bug core stabilization activation.",
+            "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80"
+        },
+        "Hip Flexors / Hamstrings": {
+            "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
+            "protocol": "1. 90/90 hip transitions for internal/external rotation.\n2. PNF contract-relax stretching for hamstrings.",
+            "image": "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?auto=format&fit=crop&w=600&q=80"
+        },
+        "Cervical Spine / Neck & Shoulders": {
+            "mechanism": "Sympathetic nervous system elevation translated into upper trapezius tension.",
+            "protocol": "1. Vagus nerve stimulation: 4-7-8 diaphragmatic breathing block.\n2. Scapular retraction and thoracic spine rolling.",
+            "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80"
+        }
+    }
+    
+    selected_pain = st.selectbox("Select Active Pain Area:", list(ai_recommendations.keys()))
+    
+    if st.button("Generate Visual Recovery Protocol ⚙️", key="btn_pain"):
+        data = ai_recommendations[selected_pain]
+        st.markdown(f"### 🎯 Target System: {selected_pain}")
+        
+        col_img, col_text = st.columns([1, 1.5])
+        with col_img:
+            st.image(data["image"], caption=f"Recommended Form Reference for {selected_pain}", use_container_width=True)
+        with col_text:
+            st.info(f"**Biomechanical Analysis:** {data['mechanism']}")
+            st.success(f"**Step-by-Step Action Protocol:**\n{data['protocol']}")
