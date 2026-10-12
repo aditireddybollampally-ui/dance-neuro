@@ -22,6 +22,21 @@ def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
+def delete_entry(entry_id):
+    db = load_db()
+    updated_db = []
+    for item in db:
+        if item.get("id") == entry_id or item.get("timestamp") == entry_id:
+            # Delete local physical file if it exists
+            if "path" in item and os.path.exists(item["path"]):
+                try:
+                    os.remove(item["path"])
+                except Exception:
+                    pass
+        else:
+            updated_db.append(item)
+    save_db(updated_db)
+
 # ==========================================
 # CUSTOM AESTHETIC STYLING (Berry Calming Palette)
 # ==========================================
@@ -106,7 +121,6 @@ with nav_col3:
 
 st.divider()
 
-# Calendar Configuration for Visual Grid
 calendar_options = {
     "editable": False,
     "selectable": True,
@@ -119,7 +133,7 @@ calendar_options = {
 }
 
 # ==========================================
-# SECTION 1: CHOREOGRAPHY + FULL CALENDAR GRID
+# SECTION 1: CHOREOGRAPHY + CALENDAR (WITH VIEW/DELETE)
 # ==========================================
 if st.session_state.active_section == "choreo":
     st.header("Choreography & Media Vault")
@@ -144,6 +158,7 @@ if st.session_state.active_section == "choreo":
                 
             db = load_db()
             db.append({
+                "id": timestamp,
                 "timestamp": timestamp,
                 "type": "choreo",
                 "date": str(c_date),
@@ -154,21 +169,22 @@ if st.session_state.active_section == "choreo":
             })
             save_db(db)
             st.success(f"Successfully saved choreography for '{c_piece}'!")
+            st.rerun()
         else:
             st.error("Please provide a piece title and upload a media file.")
             
     st.divider()
     st.subheader("📅 Rehearsal Calendar Grid")
-    st.caption("Dates with uploaded choreography will show a 📹 icon. Click any date or event to view entries.")
+    st.caption("Click directly on any calendar event to view the video or delete the choreography entry.")
     
     db = load_db()
     choreo_items = [x for x in db if x.get("type") == "choreo"]
     
-    # Build events for the visual calendar grid
     events = []
     for item in choreo_items:
         events.append({
-            "title": f"📹 {item['piece']} ({item['style']})",
+            "id": item.get("id", item.get("timestamp")),
+            "title": f"📹 {item['piece']}",
             "start": item["date"],
             "end": item["date"],
             "color": "#D893A4"
@@ -176,28 +192,56 @@ if st.session_state.active_section == "choreo":
         
     cal_response = calendar(events=events, options=calendar_options, key="choreo_visual_calendar")
     
-    # Check if a date or event was clicked on the calendar
+    selected_event_id = None
     selected_date = None
-    if cal_response.get("dateClick"):
-        selected_date = cal_response["dateClick"]["date"].split("T")[0]
-    elif cal_response.get("eventClick"):
-        selected_date = cal_response["eventClick"]["event"]["start"].split("T")[0]
 
-    if selected_date:
-        st.subheader(f"Entries for {selected_date}")
-        filtered_choreo = [item for item in choreo_items if item["date"] == selected_date]
-        if filtered_choreo:
-            for item in filtered_choreo:
+    if cal_response.get("eventClick"):
+        selected_event_id = cal_response["eventClick"]["event"]["id"]
+    elif cal_response.get("dateClick"):
+        selected_date = cal_response["dateClick"]["date"].split("T")[0]
+
+    st.divider()
+    st.subheader("📹 Rehearsal Viewer & Actions")
+
+    # If clicked directly on an event button on the calendar
+    if selected_event_id:
+        target_items = [x for x in choreo_items if x.get("id") == selected_event_id or x.get("timestamp") == selected_event_id]
+        if target_items:
+            item = target_items[0]
+            st.markdown(f"### Selected Piece: **{item['piece']}** ({item['style']})")
+            st.write(f"**Recorded Date:** {item['date']}")
+            
+            if item['file_type'] in ['mp4', 'mov', 'avi']:
+                st.video(item['path'])
+            else:
+                st.audio(item['path'])
+                
+            if st.button(f"🗑️ Delete Choreography '{item['piece']}'", key=f"del_{item['id']}"):
+                delete_entry(item['id'])
+                st.success("Choreography entry successfully deleted.")
+                st.rerun()
+
+    # If clicked on a general calendar date
+    elif selected_date:
+        filtered = [x for x in choreo_items if x["date"] == selected_date]
+        if filtered:
+            for item in filtered:
                 with st.expander(f"🎵 {item['piece']} - {item['style']} ({item['date']})"):
                     if item['file_type'] in ['mp4', 'mov', 'avi']:
                         st.video(item['path'])
                     else:
                         st.audio(item['path'])
+                    if st.button("Delete Entry 🗑️", key=f"del_date_{item['id']}"):
+                        delete_entry(item['id'])
+                        st.success("Entry deleted.")
+                        st.rerun()
         else:
             st.info("No choreography recorded on this date.")
+    else:
+        st.info("Click any event on the calendar above to view or delete.")
 
 # ==========================================
-# SECTION 2: STRESS JOURNAL + FULL CALENDAR GRID
+# SECTION 2: STRESS JOURNAL + CALENDAR (WITH VIEW/DELETE)
 # ==========================================
 elif st.session_state.active_section == "stress":
     st.header("Mental Stress Journal & Neuro-Breathing Lounge")
@@ -207,9 +251,11 @@ elif st.session_state.active_section == "stress":
     s_notes = st.text_area("Mental State Reflection / Journal Entry:", placeholder="e.g., Felt pressured during complex footwork patterns...", key="s_notes")
     
     if st.button("Save Journal Entry 🧠", key="btn_stress"):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         db = load_db()
         db.append({
-            "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
+            "id": timestamp,
+            "timestamp": timestamp,
             "type": "stress",
             "date": str(s_date),
             "stress_level": s_level,
@@ -217,13 +263,11 @@ elif st.session_state.active_section == "stress":
         })
         save_db(db)
         st.success("Journal entry saved successfully!")
+        st.rerun()
         
     st.divider()
     
-    # Breathing Lounge Visualizer
     st.subheader("🌬️ Optional Neuro-Breathing & Calm Audio Lounge")
-    st.write("Use this interactive visualizer to synchronize your breathing with calming ambient sound.")
-    
     breathing_html = """
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #D8BFCE; padding: 25px; border-radius: 15px; color: #4A3E3D; text-align: center;">
         <h3 style="margin-bottom: 10px; color: #CE8127; font-family: Georgia, serif;">🧠 Synchronized Brain Breathing</h3>
@@ -268,7 +312,7 @@ elif st.session_state.active_section == "stress":
 
     st.divider()
     st.subheader("📅 Journal Calendar Grid")
-    st.caption("Dates with logged stress or journal entries will show a 🧠 icon. Click any date or event to review.")
+    st.caption("Click directly on any journal event on the calendar to view or delete entries.")
     
     db = load_db()
     stress_items = [x for x in db if x.get("type") == "stress"]
@@ -276,6 +320,7 @@ elif st.session_state.active_section == "stress":
     stress_events = []
     for item in stress_items:
         stress_events.append({
+            "id": item.get("id", item.get("timestamp")),
             "title": f"🧠 Stress: {item['stress_level']}/10",
             "start": item["date"],
             "end": item["date"],
@@ -284,22 +329,44 @@ elif st.session_state.active_section == "stress":
         
     cal_response_stress = calendar(events=stress_events, options=calendar_options, key="stress_visual_calendar")
     
+    selected_stress_id = None
     selected_stress_date = None
-    if cal_response_stress.get("dateClick"):
-        selected_stress_date = cal_response_stress["dateClick"]["date"].split("T")[0]
-    elif cal_response_stress.get("eventClick"):
-        selected_stress_date = cal_response_stress["eventClick"]["event"]["start"].split("T")[0]
 
-    if selected_stress_date:
-        st.subheader(f"Journal Entries for {selected_stress_date}")
-        filtered_stress = [item for item in stress_items if item["date"] == selected_stress_date]
-        if filtered_stress:
-            for item in filtered_stress:
+    if cal_response_stress.get("eventClick"):
+        selected_stress_id = cal_response_stress["eventClick"]["event"]["id"]
+    elif cal_response_stress.get("dateClick"):
+        selected_stress_date = cal_response_stress["dateClick"]["date"].split("T")[0]
+
+    st.divider()
+    st.subheader("🧠 Journal Review & Actions")
+
+    if selected_stress_id:
+        target_stress = [x for x in stress_items if x.get("id") == selected_stress_id or x.get("timestamp") == selected_stress_id]
+        if target_stress:
+            item = target_stress[0]
+            st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
+            st.write(f"**Journal Entry:** {item['notes']}")
+            
+            if st.button("🗑️ Delete Journal Entry", key=f"del_st_{item['id']}"):
+                delete_entry(item['id'])
+                st.success("Journal entry deleted.")
+                st.rerun()
+
+    elif selected_stress_date:
+        filtered = [x for x in stress_items if x["date"] == selected_stress_date]
+        if filtered:
+            for item in filtered:
                 st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
                 st.write(f"*Journal Notes:* {item['notes']}")
+                if st.button("Delete Entry 🗑️", key=f"del_st_date_{item['id']}"):
+                    delete_entry(item['id'])
+                    st.success("Entry deleted.")
+                    st.rerun()
                 st.divider()
         else:
             st.info("No journal entries recorded on this date.")
+    else:
+        st.info("Click any journal event on the calendar above to view or delete.")
 
 # ==========================================
 # SECTION 3: PAIN & VISUAL AI RECOVERY
