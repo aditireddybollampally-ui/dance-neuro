@@ -7,6 +7,7 @@ import time
 import threading
 import schedule
 import smtplib
+import pydeck as pdk
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
@@ -187,9 +188,7 @@ def delete_local_entry(entry_id, db_items):
             updated_items.append(item)
     return updated_items
 
-# COMPREHENSIVE ACCOUNT DELETION FUNCTION
 def delete_user_account_completely(target_user_email):
-    # 1. Purge all physical media files and database records owned by user
     vault_db = load_json(DB_FILE, [])
     retained_vault_items = []
     for item in vault_db:
@@ -203,7 +202,6 @@ def delete_user_account_completely(target_user_email):
             retained_vault_items.append(item)
     save_json(retained_vault_items, DB_FILE)
 
-    # 2. Remove user profile and credentials
     users_db = load_json(USER_DB_FILE, {})
     if target_user_email in users_db:
         del users_db[target_user_email]
@@ -299,7 +297,7 @@ if "user_email" not in st.session_state: st.session_state.user_email = ""
 if "auth_page" not in st.session_state: st.session_state.auth_page = "login"
 if "verification_code" not in st.session_state: st.session_state.verification_code = ""
 if "pending_user" not in st.session_state: st.session_state.pending_user = {}
-if "active_section" not in st.session_state: st.session_state.active_section = "choreo"
+if "active_section" not in st.session_state: st.session_state.active_section = "studio"
 if 'breathing_active' not in st.session_state: st.session_state.breathing_active = False
 
 DANCE_STYLES = ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Jazz", "Tap", "Other"]
@@ -396,7 +394,6 @@ if not st.session_state.logged_in:
                     users[pending["email"]] = pending
                     save_json(users, USER_DB_FILE)
                     
-                    # Send Welcome Confirmation Email
                     send_real_email(pending["email"], pending.get("preferred_name", "Dancer"), purpose="welcome")
                     
                     st.session_state.logged_in = True
@@ -492,13 +489,16 @@ with st.sidebar:
         st.session_state.auth_page = "login"
         st.rerun()
 
-nav_col1, nav_col2, nav_col3 = st.columns(3)
+# 4-COLUMN TOP NAVIGATION (3 MAIN TABS + HOW TO USE)
+nav_col1, nav_col2, nav_col3, nav_col4 = st.columns(4)
 with nav_col1:
-    if st.button("📹 MEDIA VAULT", key="nav_choreo"): st.session_state.active_section = "choreo"
+    if st.button("🩰 DANCE STUDIO", key="nav_studio"): st.session_state.active_section = "studio"
 with nav_col2:
     if st.button("🧠 NEURO LOUNGE", key="nav_neuro"): st.session_state.active_section = "stress"
 with nav_col3:
     if st.button("🧘 AI RECOVERY", key="nav_recovery"): st.session_state.active_section = "pain"
+with nav_col4:
+    if st.button("📖 HOW TO USE", key="nav_how_to"): st.session_state.active_section = "how_to"
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -511,10 +511,10 @@ calendar_options = {
 }
 
 # ==========================================
-# SECTION 1: CHOREOGRAPHY VAULT
+# SECTION 1: DANCE STUDIO (MEDIA VAULT)
 # ==========================================
-if st.session_state.active_section == "choreo":
-    st.markdown("<h2>📹 Media Vault</h2>", unsafe_allow_html=True)
+if st.session_state.active_section == "studio":
+    st.markdown("<h2>🩰 Dance Studio & Media Vault</h2>", unsafe_allow_html=True)
     
     with st.expander("➕ Upload Rehearsal or Piece"):
         c1, c2 = st.columns(2)
@@ -565,136 +565,257 @@ if st.session_state.active_section == "choreo":
             st.rerun()
 
 # ==========================================
-# SECTION 2: NEURO LOUNGE
+# SECTION 2: NEURO LOUNGE (WITH SUB-TABS)
 # ==========================================
 elif st.session_state.active_section == "stress":
-    st.markdown("<h2>🧠 NeuroDance Lounge</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>🧠 Neuro Lounge</h2>", unsafe_allow_html=True)
     
-    with st.expander("📝 Log Neuro-Reflection"):
-        s1, s2 = st.columns([1,3])
-        with s1: s_level = st.slider("Mental Strain (1-10):", 1, 10, 5)
-        with s2: s_notes = st.text_area("Reflections:", placeholder="Nervous about Footwork complexities...")
-        
-        if st.button("LOG TO VAULT 🧠"):
-            vault_db_items.append({
-                "id": str(datetime.now().timestamp()), "type": "stress", 
-                "date": str(datetime.now().date()), "stress_level": s_level, 
-                "notes": s_notes, "user": st.session_state.user_email
-            })
-            save_json(vault_db_items, DB_FILE)
-            st.toast("Reflection vaulted.", icon="🧠")
-
-    st.divider()
-
-    # Instant test reminder option
-    st.subheader("📩 Daily Email Reminders")
-    c_rem1, c_rem2 = st.columns([2, 1])
-    with c_rem1:
-        st.caption("Daily journal reminder emails are sent every evening at 8:00 PM.")
-    with c_rem2:
-        if st.button("SEND TEST REMINDER 📩", key="btn_test_reminder"):
-            with st.spinner("Sending test reminder..."):
-                if send_real_email(st.session_state.user_email, "", purpose="journal_reminder"):
-                    st.success("Test reminder email sent to your inbox!")
-
-    st.divider()
+    neuro_tab1, neuro_tab2 = st.tabs(["📝 Journal & Reminders", "🌬️ Breathing Guide"])
     
-    st.subheader("🌬️ Breathing Guide (4-4-4-4)")
-    st.write("Center yourself before practice. Focus only on the countdown and your breath.")
-
-    b_col1, b_col2 = st.columns([1, 2.5])
-    
-    with b_col1:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        if not st.session_state.breathing_active:
-            if st.button("🚀 START SESSION", key="start_breathing"):
-                st.session_state.breathing_active = True
-                st.rerun()
-        else:
-            if st.button("⏹️ STOP", key="stop_breathing"):
-                st.session_state.breathing_active = False
-                st.rerun()
-
-    with b_col2:
-        breathing_placeholder = st.empty()
-        
-        if st.session_state.breathing_active:
-            phases = [
-                ("Inhale Deeply", "🌬️", 4), 
-                ("Hold", "✋", 4), 
-                ("Exhale Slowly", "🧘", 4), 
-                ("Rest", "✨", 4)
-            ]
+    with neuro_tab1:
+        with st.expander("➕ Log Neuro-Reflection"):
+            s1, s2 = st.columns([1,3])
+            with s1: s_level = st.slider("Mental Strain (1-10):", 1, 10, 5)
+            with s2: s_notes = st.text_area("Reflections:", placeholder="Nervous about Footwork complexities...")
             
-            with breathing_placeholder.container():
-                phase_colors = [PALETTE["accent_1"], PALETTE["accent_2"], PALETTE["accent_3"], PALETTE["accent_4"]]
-                st.markdown('<div class="breathing-container">', unsafe_allow_html=True)
-                icon_spot = st.empty()
-                text_spot = st.empty()
-                time_spot = st.empty()
-                st.markdown('</div>', unsafe_allow_html=True)
+            if st.button("LOG TO VAULT 🧠"):
+                vault_db_items.append({
+                    "id": str(datetime.now().timestamp()), "type": "stress", 
+                    "date": str(datetime.now().date()), "stress_level": s_level, 
+                    "notes": s_notes, "user": st.session_state.user_email
+                })
+                save_json(vault_db_items, DB_FILE)
+                st.toast("Reflection vaulted.", icon="🧠")
 
-            while st.session_state.breathing_active:
-                for idx, (p_text, p_icon, p_secs) in enumerate(phases):
-                    if not st.session_state.breathing_active: break
-                    color = phase_colors[idx]
-                    icon_spot.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 6rem; margin:0;'>{p_icon}</h1>", unsafe_allow_html=True)
-                    text_spot.markdown(f"<h2 style='text-align: center; color: {PALETTE['text']}; font-family: Playfair Display, serif; margin-top:1rem;'>{p_text}</h2>", unsafe_allow_html=True)
-                    
-                    for remaining in range(p_secs, 0, -1):
-                        time_spot.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 4rem; margin:0; font-family: Cinzel, serif;'>{remaining}</h1>", unsafe_allow_html=True)
-                        time.sleep(1)
-                    time.sleep(0.1)
-        else:
-            breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
+        st.divider()
+
+        st.subheader("📩 Daily Email Reminders")
+        c_rem1, c_rem2 = st.columns([2, 1])
+        with c_rem1:
+            st.caption("Daily journal reminder emails are sent every evening at 8:00 PM.")
+        with c_rem2:
+            if st.button("SEND TEST REMINDER 📩", key="btn_test_reminder"):
+                with st.spinner("Sending test reminder..."):
+                    if send_real_email(st.session_state.user_email, "", purpose="journal_reminder"):
+                        st.success("Test reminder email sent to your inbox!")
+
+    with neuro_tab2:
+        st.subheader("🌬️ Breathing Guide (4-4-4-4)")
+        st.write("Center yourself before practice. Focus only on the countdown and your breath.")
+
+        b_col1, b_col2 = st.columns([1, 2.5])
+        
+        with b_col1:
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            if not st.session_state.breathing_active:
+                if st.button("🚀 START SESSION", key="start_breathing"):
+                    st.session_state.breathing_active = True
+                    st.rerun()
+            else:
+                if st.button("⏹️ STOP", key="stop_breathing"):
+                    st.session_state.breathing_active = False
+                    st.rerun()
+
+        with b_col2:
+            breathing_placeholder = st.empty()
+            
+            if st.session_state.breathing_active:
+                phases = [
+                    ("Inhale Deeply", "🌬️", 4), 
+                    ("Hold", "✋", 4), 
+                    ("Exhale Slowly", "🧘", 4), 
+                    ("Rest", "✨", 4)
+                ]
+                
+                with breathing_placeholder.container():
+                    phase_colors = [PALETTE["accent_1"], PALETTE["accent_2"], PALETTE["accent_3"], PALETTE["accent_4"]]
+                    st.markdown('<div class="breathing-container">', unsafe_allow_html=True)
+                    icon_spot = st.empty()
+                    text_spot = st.empty()
+                    time_spot = st.empty()
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                while st.session_state.breathing_active:
+                    for idx, (p_text, p_icon, p_secs) in enumerate(phases):
+                        if not st.session_state.breathing_active: break
+                        color = phase_colors[idx]
+                        icon_spot.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 6rem; margin:0;'>{p_icon}</h1>", unsafe_allow_html=True)
+                        text_spot.markdown(f"<h2 style='text-align: center; color: {PALETTE['text']}; font-family: Playfair Display, serif; margin-top:1rem;'>{p_text}</h2>", unsafe_allow_html=True)
+                        
+                        for remaining in range(p_secs, 0, -1):
+                            time_spot.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 4rem; margin:0; font-family: Cinzel, serif;'>{remaining}</h1>", unsafe_allow_html=True)
+                            time.sleep(1)
+                        time.sleep(0.1)
+            else:
+                breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
 # ==========================================
-# SECTION 3: AI RECOVERY (INFOGRAPHICS)
+# SECTION 3: AI RECOVERY (WITH SUB-TABS)
 # ==========================================
 elif st.session_state.active_section == "pain":
-    st.markdown("<h2>🧘 AI Visual Recovery</h2>", unsafe_allow_html=True)
-    st.write("Modular somatic recovery guides based on dance biomechanics.")
-    
-    RAW_BASE = "https://raw.githubusercontent.com/aditireddybollampally-ui/dance-neuro/main"
-    
-    ai_recovery_data = {
-        "Plantar Fascia (Foot)": {
-            "mechanism": "High impact stamping stress (classical dance).",
-            "infographic_url": f"{RAW_BASE}/4eb93dc5-a2c3-4676-929e-2d488976471f.jpeg",
-            "caption": "Modular guide for myofascial release of the arch."
-        },
-        "Achilles / Calf": {
-            "mechanism": "Repetitive jumps/releve overload.",
-            "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra.png",
-            "caption": "Stretching protocols for lower leg tension."
-        },
-        "Lower Back": {
-            "mechanism": "Postural holding strain and core fatigue.",
-            "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(1).png",
-            "caption": "Spinal decompression and alignment guides."
-        },
-        "Hip Flexors": {
-            "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
-            "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(2).png",
-            "caption": "Hip mobility and flexor release routines."
-        },
-        "Neck / Cervical Spine": {
-            "mechanism": "Nervous tension translating to upper trapezius strain.",
-            "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(3).png",
-            "caption": "Levator scapulae and cervical release techniques."
-        }
-    }
-    
-    selected_pain = st.selectbox("Select Area of Tension:", list(ai_recovery_data.keys()))
-    
-    if selected_pain:
-        data = ai_recovery_data[selected_pain]
-        st.divider()
-        st.markdown(f"<h3 style='color: {PALETTE['text']};'>🎯 Somatic Focus: {selected_pain}</h3>", unsafe_allow_html=True)
-        st.caption(f"Biomechanical Context: {data['mechanism']}")
-        st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<h2>🧘 AI Recovery</h2>", unsafe_allow_html=True)
+    st.write("Modular somatic recovery guides and clinical specialist directories based on dance biomechanics.")
+
+    recovery_tab1, recovery_tab2 = st.tabs(["🧘 Recovery Stretches", "📍 Maps"])
+
+    with recovery_tab1:
+        RAW_BASE = "https://raw.githubusercontent.com/aditireddybollampally-ui/dance-neuro/main"
         
-        col1, col2, col3 = st.columns([0.2, 4, 0.2])
-        with col2:
-            st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>Recovery Guide Infographic</h4>", unsafe_allow_html=True)
-            st.image(data["infographic_url"], caption=data["caption"], use_container_width=True)
+        ai_recovery_data = {
+            "Plantar Fascia (Foot)": {
+                "mechanism": "High impact stamping stress (classical dance).",
+                "infographic_url": f"{RAW_BASE}/4eb93dc5-a2c3-4676-929e-2d488976471f.jpeg",
+                "caption": "Modular guide for myofascial release of the arch."
+            },
+            "Achilles / Calf": {
+                "mechanism": "Repetitive jumps/releve overload.",
+                "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra.png",
+                "caption": "Stretching protocols for lower leg tension."
+            },
+            "Lower Back": {
+                "mechanism": "Postural holding strain and core fatigue.",
+                "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(1).png",
+                "caption": "Spinal decompression and alignment guides."
+            },
+            "Hip Flexors": {
+                "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
+                "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(2).png",
+                "caption": "Hip mobility and flexor release routines."
+            },
+            "Neck / Cervical Spine": {
+                "mechanism": "Nervous tension translating to upper trapezius strain.",
+                "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(3).png",
+                "caption": "Levator scapulae and cervical release techniques."
+            }
+        }
+        
+        selected_pain = st.selectbox("Select Area of Tension:", list(ai_recovery_data.keys()))
+        
+        if selected_pain:
+            data = ai_recovery_data[selected_pain]
+            st.divider()
+            st.markdown(f"<h3 style='color: {PALETTE['text']};'>🎯 Somatic Focus: {selected_pain}</h3>", unsafe_allow_html=True)
+            st.caption(f"Biomechanical Context: {data['mechanism']}")
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns([0.2, 4, 0.2])
+            with col2:
+                st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>Recovery Guide Infographic</h4>", unsafe_allow_html=True)
+                st.image(data["infographic_url"], caption=data["caption"], use_container_width=True)
+
+    with recovery_tab2:
+        st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
+        st.write("Locate specialized doctors, physical trainers, and athletic therapists who treat performing arts injuries.")
+
+        clinic_data = [
+            {
+                "name": "Harkness Center for Dance Injuries",
+                "doctor_type": "Dance Physician",
+                "emoji": "💃",
+                "address": "280 1st Ave, New York, NY",
+                "lat": 40.7335, "lon": -73.9786,
+                "color": [216, 147, 164]
+            },
+            {
+                "name": "NYU Langone Sports Medicine",
+                "doctor_type": "Sports Medicine Doctor",
+                "emoji": "🏥",
+                "address": "333 E 38th St, New York, NY",
+                "lat": 40.7468, "lon": -73.9723,
+                "color": [206, 129, 39]
+            },
+            {
+                "name": "Somatic Dance Physical Therapy",
+                "doctor_type": "Physical Therapist",
+                "emoji": "🧘",
+                "address": "150 Broadway, New York, NY",
+                "lat": 40.7092, "lon": -74.0089,
+                "color": [229, 163, 143]
+            },
+            {
+                "name": "Performing Arts Athletic Training Lab",
+                "doctor_type": "Certified Athletic Trainer",
+                "emoji": "🏃",
+                "address": "111 8th Ave, New York, NY",
+                "lat": 40.7410, "lon": -74.0020,
+                "color": [216, 191, 206]
+            },
+            {
+                "name": "Center for Performing Arts Orthopedics",
+                "doctor_type": "Orthopedic Specialist",
+                "emoji": "🦴",
+                "address": "530 E 70th St, New York, NY",
+                "lat": 40.7651, "lon": -73.9530,
+                "color": [122, 106, 104]
+            }
+        ]
+
+        df_clinics = pd.DataFrame(clinic_data)
+
+        st.markdown("""
+        **Doctor Type Legend:**
+        * 💃 **Dance Physician** (Performing arts medicine & specialized diagnosis)
+        * 🏥 **Sports Medicine Doctor** (Non-surgical joint, muscle & tendon alignment)
+        * 🧘 **Physical Therapist** (Targeted rehabilitation, mobility & alignment therapy)
+        * 🏃 **Athletic Trainer** (On-site injury prevention, taping & somatic conditioning)
+        * 🦴 **Orthopedic Specialist** (Bone structure, foot/ankle & joint repair)
+        """)
+
+        view_state = pdk.ViewState(
+            latitude=40.7380,
+            longitude=-73.9800,
+            zoom=11.5,
+            pitch=40
+        )
+
+        layer = pdk.Layer(
+            "ScatterplotLayer",
+            df_clinics,
+            get_position=["lon", "lat"],
+            get_color="color",
+            get_radius=250,
+            pickable=True,
+            auto_highlight=True
+        )
+
+        r = pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            tooltip={"html": "<b>{emoji} {name}</b><br/><b>Role:</b> {doctor_type}<br/><b>Address:</b> {address}"}
+        )
+
+        st.pydeck_chart(r)
+
+# ==========================================
+# SECTION 4: HOW TO USE GUIDE
+# ==========================================
+elif st.session_state.active_section == "how_to":
+    st.markdown("<h2>📖 How to Use DanceVault</h2>", unsafe_allow_html=True)
+    st.write("Welcome to your complete user guide for navigating all sections of **DanceVault**.")
+
+    st.markdown("""
+    ### 📩 Support Contact
+    If you encounter any issues or have questions, reach out directly at:
+    * **Support Email**: `dancevaultneuroapp@gmail.com`
+    """)
+
+    st.divider()
+
+    st.markdown("""
+    ### 🩰 1. Dance Studio Guide
+    * **Purpose**: Your central media library to upload, store, and review rehearsal videos and audio files.
+    * **Uploading Rehearsals**: Expand the **"Upload Rehearsal or Piece"** section, enter your choreography title, pick your rehearsal date, upload an `.mp4`, `.mov`, or `.mp3` file, and click **SAVE TO VAULT**.
+    * **Calendar Integration**: Use the interactive calendar to click on any date or rehearsal event block to instantly play or delete your media files.
+
+    ### 🧠 2. Neuro Lounge Guide
+    * **Journal & Reminders**: Under the **Journal & Reminders** sub-tab, log your mental strain rating (1-10) and write reflections. You can also toggle daily automated email reminders (sent at 8:00 PM) or click **SEND TEST REMINDER** to verify your SMTP setup.
+    * **Breathing Guide**: Switch to the **Breathing Guide** sub-tab and click **START SESSION** to practice the 4-4-4-4 box breathing cycle (Inhale, Hold, Exhale, Rest) before or after practice.
+
+    ### 🧘 3. AI Recovery Guide
+    * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
+    * **Maps**: Switch to the **Maps** sub-tab to view nearby specialized medical clinics and practitioners categorized by color and custom doctor emojis (💃 Dance Physicians, 🏥 Sports Med Doctors, 🧘 Physical Therapists, 🏃 Athletic Trainers, and 🦴 Orthopedic Specialists).
+
+    ### 👤 Account Management & Security
+    * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style, or reminder preferences.
+    * **Account Deletion**: Use the **PERMANENTLY DELETE ACCOUNT** button in the sidebar to wipe all your profile records, reflection logs, and physical media files from local storage instantly.
+    """)
