@@ -60,7 +60,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Great+Vibes&family=Cinzel:wght@400..700&display=swap');
 
     .stApp {
-        background-color: #EDDFD9;
+        background: linear-gradient(135deg, #EDDFD9 0%, #D8BFCE 50%, #E5A38F 100%);
         color: #4A3E3D;
         font-family: 'Playfair Display', Georgia, serif;
     }
@@ -87,23 +87,88 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
+    /* Reference Card Styling for Login & Signup */
+    .login-card {
+        background-color: #FFFFFF;
+        padding: 40px 35px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(74, 62, 61, 0.15);
+        margin: auto;
+        max-width: 450px;
+        text-align: center;
+    }
+
+    .login-card h2 {
+        font-family: 'Cinzel', serif !important;
+        color: #4A3E3D !important;
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 30px;
+    }
+
+    /* Form Labels & Underline Fields */
+    .stTextInput label {
+        font-family: 'Playfair Display', serif !important;
+        color: #7A6A68 !important;
+        font-size: 13px !important;
+        text-align: left !important;
+        display: block !important;
+    }
+
+    .stTextInput input {
+        border: none !important;
+        border-bottom: 2px solid #D8BFCE !important;
+        border-radius: 0px !important;
+        background-color: transparent !important;
+        color: #4A3E3D !important;
+        padding-left: 5px !important;
+        font-family: 'Playfair Display', serif !important;
+    }
+
+    .stTextInput input:focus {
+        border-bottom: 2px solid #CE8127 !important;
+        box-shadow: none !important;
+    }
+
+    /* Berry Calming Pill Buttons */
     .stButton>button {
-        background-color: #D893A4 !important;
+        background: linear-gradient(135deg, #E5A38F 0%, #D893A4 100%) !important;
         color: #FFFFFF !important;
-        border-radius: 20px !important;
+        border-radius: 25px !important;
         border: none !important;
         font-family: 'Cinzel', serif !important;
-        font-size: 14px !important;
-        padding: 8px 22px !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        padding: 10px 25px !important;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 10px rgba(216, 147, 164, 0.3);
+        box-shadow: 0 4px 12px rgba(216, 147, 164, 0.4);
         width: 100%;
+        margin-top: 15px;
     }
 
     .stButton>button:hover {
-        background-color: #CE8127 !important;
+        background: linear-gradient(135deg, #CE8127 0%, #E5A38F 100%) !important;
         color: #FFFFFF !important;
         transform: translateY(-2px);
+    }
+
+    .social-btn {
+        display: inline-block;
+        width: 45px;
+        height: 45px;
+        line-height: 45px;
+        border-radius: 50%;
+        background-color: #EDDFD9;
+        color: #CE8127;
+        font-size: 20px;
+        margin: 0 8px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+
+    .social-btn:hover {
+        transform: scale(1.1);
+        background-color: #D8BFCE;
     }
 
     .streamlit-expanderHeader {
@@ -121,28 +186,39 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "user_email" not in st.session_state:
     st.session_state.user_email = ""
+if "auth_page" not in st.session_state:
+    st.session_state.auth_page = "login"
 
 DANCE_STYLES = ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Jazz", "Tap", "Other"]
 AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
 
-# If not logged in, render Auth Gateway
+# If not logged in, render Auth Gateway in Reference Format
 if not st.session_state.logged_in:
     st.markdown("<h1>🩰 DanceVault</h1>", unsafe_allow_html=True)
     st.markdown("<div class='script-subtitle'>Dance. Track. Breathe. Stretch. Repeat.</div>", unsafe_allow_html=True)
     
-    col_spacer1, col_auth, col_spacer2 = st.columns([1, 1.2, 1])
+    col_l, col_center, col_r = st.columns([1, 1.2, 1])
+    users = load_users()
     
-    with col_auth:
-        st.markdown("### 🔐 Account Access")
-        auth_mode = st.radio("Choose Action:", ["Sign In", "Sign Up with Email", "Forgot Password"], horizontal=True)
-        
-        users = load_users()
-        
-        if auth_mode == "Sign In":
-            email_input = st.text_input("Email Address", key="si_email")
-            pass_input = st.text_input("Password", type="password", key="si_pass")
+    with col_center:
+        # LOGIN SCREEN (Matching Reference Formatting)
+        if st.session_state.auth_page == "login":
+            st.markdown("""
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='font-family: Cinzel, serif; color: #4A3E3D;'>Login</h2>
+                </div>
+            """, unsafe_allow_html=True)
             
-            if st.button("Sign In to Vault 🚀"):
+            email_input = st.text_input("Username / Email", placeholder="Type your email", key="si_email")
+            pass_input = st.text_input("Password", type="password", placeholder="Type your password", key="si_pass")
+            
+            col_fp1, col_fp2 = st.columns([1, 1])
+            with col_fp2:
+                if st.button("Forgot password?", key="btn_to_fp"):
+                    st.session_state.auth_page = "forgot"
+                    st.rerun()
+            
+            if st.button("LOGIN", key="btn_login_submit"):
                 if email_input in users and users[email_input]["password"] == pass_input:
                     st.session_state.logged_in = True
                     st.session_state.user_email = email_input
@@ -151,36 +227,51 @@ if not st.session_state.logged_in:
                 else:
                     st.error("Invalid email or password.")
             
-            st.markdown("<div style='text-align: center; margin: 10px 0;'>— OR —</div>", unsafe_allow_html=True)
-            if st.button("🔵 Sign in with Google"):
-                google_email = "dancer.google@gmail.com"
-                if google_email not in users:
-                    users[google_email] = {
-                        "password": "google_oauth_user",
-                        "full_name": "Google User",
-                        "preferred_name": "Dancer",
-                        "dance_style": "Bharathanatyam",
-                        "daily_reminder": True,
-                        "avatar": "🩰"
-                    }
-                    save_users(users)
-                st.session_state.logged_in = True
-                st.session_state.user_email = google_email
-                st.success("Successfully authenticated with Google!")
+            st.markdown("<p style='text-align: center; color: #7A6A68; font-size: 12px; margin-top: 25px;'>Or Sign In Using</p>", unsafe_allow_html=True)
+            
+            col_soc1, col_soc2, col_soc3 = st.columns([1, 1, 1])
+            with col_soc2:
+                if st.button("🔵 Google", key="btn_google_login"):
+                    google_email = "dancer.google@gmail.com"
+                    if google_email not in users:
+                        users[google_email] = {
+                            "password": "google_oauth_user",
+                            "full_name": "Google User",
+                            "preferred_name": "Dancer",
+                            "dance_style": "Bharathanatyam",
+                            "daily_reminder": True,
+                            "avatar": "🩰"
+                        }
+                        save_users(users)
+                    st.session_state.logged_in = True
+                    st.session_state.user_email = google_email
+                    st.success("Authenticated with Google!")
+                    st.rerun()
+                    
+            st.markdown("<p style='text-align: center; color: #7A6A68; font-size: 12px; margin-top: 30px;'>Or Sign Up Using</p>", unsafe_allow_html=True)
+            if st.button("SIGN UP", key="btn_to_signup"):
+                st.session_state.auth_page = "signup"
                 st.rerun()
 
-        elif auth_mode == "Sign Up with Email":
-            new_email = st.text_input("New Email Address", key="su_email")
-            new_pass = st.text_input("Create Password", type="password", key="su_pass")
-            full_name = st.text_input("Full Name", key="su_fullname")
-            pref_name = st.text_input("Preferred Name", key="su_prefname")
-            primary_style = st.selectbox("Primary Dance Style:", DANCE_STYLES, key="su_style")
-            daily_reminder = st.checkbox("Enable daily reminders to log rehearsals & mental health", value=True, key="su_reminder")
+        # SIGN UP SCREEN
+        elif st.session_state.auth_page == "signup":
+            st.markdown("""
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='font-family: Cinzel, serif; color: #4A3E3D;'>Sign Up</h2>
+                </div>
+            """, unsafe_allow_html=True)
             
-            if st.button("Create Account & Vault ✨"):
+            new_email = st.text_input("Email Address", placeholder="Type your email", key="su_email")
+            new_pass = st.text_input("Password", type="password", placeholder="Create password", key="su_pass")
+            full_name = st.text_input("Full Name", placeholder="e.g., Maya Rao", key="su_fullname")
+            pref_name = st.text_input("Preferred Name", placeholder="e.g., Maya", key="su_prefname")
+            primary_style = st.selectbox("Primary Dance Style:", DANCE_STYLES, key="su_style")
+            daily_reminder = st.checkbox("Enable daily log reminders", value=True, key="su_reminder")
+            
+            if st.button("CREATE ACCOUNT", key="btn_signup_submit"):
                 if new_email and new_pass and full_name and pref_name:
                     if new_email in users:
-                        st.error("An account with this email already exists. Please Sign In.")
+                        st.error("Account already exists. Please login.")
                     else:
                         users[new_email] = {
                             "password": new_pass,
@@ -193,36 +284,33 @@ if not st.session_state.logged_in:
                         save_users(users)
                         st.session_state.logged_in = True
                         st.session_state.user_email = new_email
-                        st.success("Account created successfully!")
+                        st.success("Account created!")
                         st.rerun()
                 else:
-                    st.error("Please fill out all required fields.")
-            
-            st.markdown("<div style='text-align: center; margin: 10px 0;'>— OR —</div>", unsafe_allow_html=True)
-            if st.button("🔵 Sign up with Google"):
-                google_email = "dancer.google@gmail.com"
-                if google_email not in users:
-                    users[google_email] = {
-                        "password": "google_oauth_user",
-                        "full_name": "Google User",
-                        "preferred_name": "Dancer",
-                        "dance_style": "Bharathanatyam",
-                        "daily_reminder": True,
-                        "avatar": "🩰"
-                    }
-                    save_users(users)
-                st.session_state.logged_in = True
-                st.session_state.user_email = google_email
-                st.success("Successfully signed up with Google!")
+                    st.error("Please fill out all fields.")
+                    
+            if st.button("Back to Login", key="btn_back_login"):
+                st.session_state.auth_page = "login"
                 st.rerun()
 
-        elif auth_mode == "Forgot Password":
-            reset_email = st.text_input("Enter your registered email", key="fp_email")
-            if st.button("Recover Password 🔑"):
+        # FORGOT PASSWORD SCREEN
+        elif st.session_state.auth_page == "forgot":
+            st.markdown("""
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='font-family: Cinzel, serif; color: #4A3E3D;'>Reset Password</h2>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            reset_email = st.text_input("Registered Email", placeholder="Type your email", key="fp_email")
+            if st.button("RECOVER PASSWORD", key="btn_fp_submit"):
                 if reset_email in users:
                     st.info(f"Your password is: **{users[reset_email]['password']}**")
                 else:
-                    st.error("Email not found in database.")
+                    st.error("Email not found.")
+                    
+            if st.button("Back to Login", key="btn_back_login_fp"):
+                st.session_state.auth_page = "login"
+                st.rerun()
 
     st.stop()
 
@@ -266,6 +354,7 @@ with st.sidebar.expander("⚙️ Account Settings"):
     if st.button("🚪 Sign Out"):
         st.session_state.logged_in = False
         st.session_state.user_email = ""
+        st.session_state.auth_page = "login"
         st.rerun()
         
     if st.button("🔴 Delete Account", key="btn_del_acc"):
@@ -274,6 +363,7 @@ with st.sidebar.expander("⚙️ Account Settings"):
             save_users(users_db)
         st.session_state.logged_in = False
         st.session_state.user_email = ""
+        st.session_state.auth_page = "login"
         st.success("Account deleted.")
         st.rerun()
 
@@ -557,46 +647,82 @@ elif st.session_state.active_section == "stress":
 # SECTION 3: PAIN & VISUAL AI RECOVERY
 # ==========================================
 elif st.session_state.active_section == "pain":
-    st.header("Physical Pain & Visual AI Recovery Protocols")
-    st.write("Select a specific area of somatic tension to view step-by-step instructions accompanied by reference illustrations.")
+    st.header("Physical Pain & AI Visual Recovery Protocols")
+    st.write("Select a specific area of somatic tension to generate biomechanical explanations, video demonstrations, and step-by-step stretch routines.")
     
     ai_recommendations = {
         "Plantar Fascia / Arch": {
-            "mechanism": "High impact shock absorption stress (common in classical foot-stamping).",
-            "protocol": "1. Myofascial release using a lacrosse ball under the medial longitudinal arch (2 mins).\n2. Eccentric calf drops to unload insertion points.",
-            "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80"
+            "mechanism": "High impact shock absorption stress common in classical foot-stamping (e.g., Tatte Adavu).",
+            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+            "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
+            "steps": [
+                "**Step 1:** Sit comfortably on a chair or floor and place a lacrosse or massage ball directly beneath the arch of your barefoot.",
+                "**Step 2:** Roll the ball gently from the ball of your foot down to your heel, applying light to moderate downward pressure for 60 seconds per side.",
+                "**Step 3:** Stand facing a wall and perform eccentric calf drops off the edge of a step, slowly lowering your heels below step level over 4 seconds."
+            ]
         },
         "Achilles / Calf": {
-            "mechanism": "Repetitive rebound acceleration and plantarflexion overload.",
-            "protocol": "1. Soleus-focused bent-knee wall stretches.\n2. Dynamic ankle dorsiflexion mobility drills.",
-            "image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80"
+            "mechanism": "Repetitive rebound acceleration and plantarflexion overload from quick jumps and releve holdings.",
+            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+            "image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80",
+            "steps": [
+                "**Step 1:** Stand facing a wall with hands placed flat against it at shoulder height.",
+                "**Step 2:** Step one leg back, keeping the back heel pinned flat on the floor and back knee bent slightly (targeting the soleus).",
+                "**Step 3:** Lean gently into the wall until a deep stretch is felt in the lower calf/Achilles tendon. Hold for 30–45 seconds per side."
+            ]
         },
         "Lumbar Spine (Lower Back)": {
-            "mechanism": "Compensatory extension strain during postural alignment or core fatigue.",
-            "protocol": "1. Cat-Camel spinal articulation to reset proprioception.\n2. Dead-bug core stabilization activation.",
-            "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80"
+            "mechanism": "Compensatory extension strain during upright postural holding (Aramandi/plié alignment) or core fatigue.",
+            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+            "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80",
+            "steps": [
+                "**Step 1:** Start on hands and knees on a soft yoga mat (tabletop position).",
+                "**Step 2:** Inhale deeply as you arch your back and tilt your head slightly upward (Cow Pose).",
+                "**Step 3:** Exhale as you round your spine toward the ceiling, pulling your belly button toward your back (Cat Pose). Repeat dynamically for 10 breathing cycles."
+            ]
         },
         "Hip Flexors / Hamstrings": {
-            "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
-            "protocol": "1. 90/90 hip transitions for internal/external rotation.\n2. PNF contract-relax stretching for hamstrings.",
-            "image": "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?auto=format&fit=crop&w=600&q=80"
+            "mechanism": "Extreme range-of-motion holding under neuromuscular tension during splits and high extensions.",
+            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+            "image": "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?auto=format&fit=crop&w=600&q=80",
+            "steps": [
+                "**Step 1:** Begin in a 90/90 seated position on the floor with front and back knees bent at 90-degree angles.",
+                "**Step 2:** Rotate your torso toward the front shin, keeping your spine tall, and hold for 30 seconds to open hip rotators.",
+                "**Step 3:** Shift into a low lunge with back knee resting on the mat, tucking pelvis slightly forward to lengthen hip flexors."
+            ]
         },
         "Cervical Spine / Neck & Shoulders": {
-            "mechanism": "Sympathetic nervous system elevation translated into upper trapezius tension.",
-            "protocol": "1. Vagus nerve stimulation: 4-7-8 diaphragmatic breathing block.\n2. Scapular retraction and thoracic spine rolling.",
-            "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80"
+            "mechanism": "Sympathetic nervous system elevation translated into upper trapezius and levator scapulae strain.",
+            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+            "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
+            "steps": [
+                "**Step 1:** Sit up tall on a stool or yoga block with shoulders relaxed away from your ears.",
+                "**Step 2:** Gently drop your right ear toward your right shoulder while extending your left arm downward at a 45-degree angle.",
+                "**Step 3:** Place your right hand gently on top of your head to apply light pressure (no pulling). Hold for 30 seconds per side."
+            ]
         }
     }
     
-    selected_pain = st.selectbox("Select Active Pain Area:", list(ai_recommendations.keys()))
+    selected_pain = st.selectbox("Select Active Tension or Soreness Area:", list(ai_recommendations.keys()))
     
     if st.button("Generate Visual Recovery Protocol ⚙️", key="btn_pain"):
         data = ai_recommendations[selected_pain]
         st.markdown(f"### 🎯 Target System: {selected_pain}")
+        st.info(f"**Biomechanical Analysis:** {data['mechanism']}")
         
-        col_img, col_text = st.columns([1, 1.5])
+        st.divider()
+        col_vid, col_img = st.columns(2)
+        
+        with col_vid:
+            st.subheader("📹 Demonstration Clip")
+            st.video(data["video_url"])
+            st.caption("AI-assisted movement reference for form execution.")
+            
         with col_img:
-            st.image(data["image"], caption=f"Recommended Form Reference for {selected_pain}", use_container_width=True)
-        with col_text:
-            st.info(f"**Biomechanical Analysis:** {data['mechanism']}")
-            st.success(f"**Step-by-Step Action Protocol:**\n{data['protocol']}")
+            st.subheader("🖼️ Form Reference Frame")
+            st.image(data["image"], caption=f"Anatomical Focus Alignment for {selected_pain}", use_container_width=True)
+            
+        st.divider()
+        st.subheader("🧘 How To Do The Stretches (Step-by-Step Guide)")
+        for step in data["steps"]:
+            st.markdown(f"* {step}")
