@@ -10,24 +10,39 @@ st.set_page_config(page_title="DanceVault", page_icon="🩰", layout="wide")
 
 VAULT_DIR = "./local_dance_vault"
 DB_FILE = "./vault_database.json"
+USER_DB_FILE = "./users_database.json"
 os.makedirs(VAULT_DIR, exist_ok=True)
 
 def load_db():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+            for item in data:
+                if "id" not in item:
+                    item["id"] = item.get("timestamp", str(datetime.now().timestamp()))
+            return data
     return []
 
 def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
+def load_users():
+    if os.path.exists(USER_DB_FILE):
+        with open(USER_DB_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_users(users):
+    with open(USER_DB_FILE, "w") as f:
+        json.dump(users, f, indent=4)
+
 def delete_entry(entry_id):
     db = load_db()
     updated_db = []
     for item in db:
-        if item.get("id") == entry_id or item.get("timestamp") == entry_id:
-            # Delete local physical file if it exists
+        item_id = item.get("id", item.get("timestamp"))
+        if item_id == entry_id:
             if "path" in item and os.path.exists(item["path"]):
                 try:
                     os.remove(item["path"])
@@ -99,11 +114,174 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# App Title & Tagline
-st.markdown("<h1>🩰 DanceVault</h1>", unsafe_allow_html=True)
-st.markdown("<div class='script-subtitle'>Dance. Track. Breathe. Stretch. Repeat.</div>", unsafe_allow_html=True)
+# ==========================================
+# AUTHENTICATION STATE MANAGEMENT
+# ==========================================
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user_email" not in st.session_state:
+    st.session_state.user_email = ""
 
-# Initialize Session State for Section Navigation
+DANCE_STYLES = ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Jazz", "Tap", "Other"]
+AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
+
+# If not logged in, render Auth Gateway
+if not st.session_state.logged_in:
+    st.markdown("<h1>🩰 DanceVault</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='script-subtitle'>Dance. Track. Breathe. Stretch. Repeat.</div>", unsafe_allow_html=True)
+    
+    col_spacer1, col_auth, col_spacer2 = st.columns([1, 1.2, 1])
+    
+    with col_auth:
+        st.markdown("### 🔐 Account Access")
+        auth_mode = st.radio("Choose Action:", ["Sign In", "Sign Up with Email", "Forgot Password"], horizontal=True)
+        
+        users = load_users()
+        
+        if auth_mode == "Sign In":
+            email_input = st.text_input("Email Address", key="si_email")
+            pass_input = st.text_input("Password", type="password", key="si_pass")
+            
+            if st.button("Sign In to Vault 🚀"):
+                if email_input in users and users[email_input]["password"] == pass_input:
+                    st.session_state.logged_in = True
+                    st.session_state.user_email = email_input
+                    st.success("Welcome back!")
+                    st.rerun()
+                else:
+                    st.error("Invalid email or password.")
+            
+            st.markdown("<div style='text-align: center; margin: 10px 0;'>— OR —</div>", unsafe_allow_html=True)
+            if st.button("🔵 Sign in with Google"):
+                google_email = "dancer.google@gmail.com"
+                if google_email not in users:
+                    users[google_email] = {
+                        "password": "google_oauth_user",
+                        "full_name": "Google User",
+                        "preferred_name": "Dancer",
+                        "dance_style": "Bharathanatyam",
+                        "daily_reminder": True,
+                        "avatar": "🩰"
+                    }
+                    save_users(users)
+                st.session_state.logged_in = True
+                st.session_state.user_email = google_email
+                st.success("Successfully authenticated with Google!")
+                st.rerun()
+
+        elif auth_mode == "Sign Up with Email":
+            new_email = st.text_input("New Email Address", key="su_email")
+            new_pass = st.text_input("Create Password", type="password", key="su_pass")
+            full_name = st.text_input("Full Name", key="su_fullname")
+            pref_name = st.text_input("Preferred Name", key="su_prefname")
+            primary_style = st.selectbox("Primary Dance Style:", DANCE_STYLES, key="su_style")
+            daily_reminder = st.checkbox("Enable daily reminders to log rehearsals & mental health", value=True, key="su_reminder")
+            
+            if st.button("Create Account & Vault ✨"):
+                if new_email and new_pass and full_name and pref_name:
+                    if new_email in users:
+                        st.error("An account with this email already exists. Please Sign In.")
+                    else:
+                        users[new_email] = {
+                            "password": new_pass,
+                            "full_name": full_name,
+                            "preferred_name": pref_name,
+                            "dance_style": primary_style,
+                            "daily_reminder": daily_reminder,
+                            "avatar": "🩰"
+                        }
+                        save_users(users)
+                        st.session_state.logged_in = True
+                        st.session_state.user_email = new_email
+                        st.success("Account created successfully!")
+                        st.rerun()
+                else:
+                    st.error("Please fill out all required fields.")
+            
+            st.markdown("<div style='text-align: center; margin: 10px 0;'>— OR —</div>", unsafe_allow_html=True)
+            if st.button("🔵 Sign up with Google"):
+                google_email = "dancer.google@gmail.com"
+                if google_email not in users:
+                    users[google_email] = {
+                        "password": "google_oauth_user",
+                        "full_name": "Google User",
+                        "preferred_name": "Dancer",
+                        "dance_style": "Bharathanatyam",
+                        "daily_reminder": True,
+                        "avatar": "🩰"
+                    }
+                    save_users(users)
+                st.session_state.logged_in = True
+                st.session_state.user_email = google_email
+                st.success("Successfully signed up with Google!")
+                st.rerun()
+
+        elif auth_mode == "Forgot Password":
+            reset_email = st.text_input("Enter your registered email", key="fp_email")
+            if st.button("Recover Password 🔑"):
+                if reset_email in users:
+                    st.info(f"Your password is: **{users[reset_email]['password']}**")
+                else:
+                    st.error("Email not found in database.")
+
+    st.stop()
+
+# Load User Profile Data
+users_db = load_users()
+user_profile = users_db.get(st.session_state.user_email, {
+    "full_name": "Dancer",
+    "preferred_name": "Dancer",
+    "dance_style": "Bharathanatyam",
+    "daily_reminder": True,
+    "avatar": "🩰"
+})
+
+# ==========================================
+# MAIN DASHBOARD
+# ==========================================
+st.markdown("<h1>🩰 DanceVault</h1>", unsafe_allow_html=True)
+st.markdown(f"<div class='script-subtitle'>Welcome back, {user_profile.get('avatar', '🩰')} {user_profile.get('preferred_name', 'Dancer')} | Dance. Track. Breathe. Stretch. Repeat.</div>", unsafe_allow_html=True)
+
+# SIDEBAR ACCOUNT SETTINGS
+st.sidebar.markdown(f"### {user_profile.get('avatar', '🩰')} {user_profile.get('preferred_name', 'Dancer')}'s Vault")
+st.sidebar.caption(f"Logged in as: {st.session_state.user_email}")
+
+with st.sidebar.expander("⚙️ Account Settings"):
+    new_avatar = st.selectbox("Choose Avatar:", AVATAR_OPTIONS, index=AVATAR_OPTIONS.index(user_profile.get("avatar", "🩰")) if user_profile.get("avatar") in AVATAR_OPTIONS else 0)
+    new_pref_name = st.text_input("Preferred Name:", value=user_profile.get("preferred_name", ""))
+    new_style = st.selectbox("Primary Dance Style:", DANCE_STYLES, index=DANCE_STYLES.index(user_profile.get("dance_style", "Bharathanatyam")) if user_profile.get("dance_style") in DANCE_STYLES else 0)
+    new_reminder = st.checkbox("Daily Log Reminders", value=user_profile.get("daily_reminder", True))
+    
+    if st.button("Save Profile Settings 💾"):
+        user_profile["avatar"] = new_avatar
+        user_profile["preferred_name"] = new_pref_name
+        user_profile["dance_style"] = new_style
+        user_profile["daily_reminder"] = new_reminder
+        users_db[st.session_state.user_email] = user_profile
+        save_users(users_db)
+        st.success("Settings updated!")
+        st.rerun()
+        
+    st.divider()
+    if st.button("🚪 Sign Out"):
+        st.session_state.logged_in = False
+        st.session_state.user_email = ""
+        st.rerun()
+        
+    if st.button("🔴 Delete Account", key="btn_del_acc"):
+        if st.session_state.user_email in users_db:
+            del users_db[st.session_state.user_email]
+            save_users(users_db)
+        st.session_state.logged_in = False
+        st.session_state.user_email = ""
+        st.success("Account deleted.")
+        st.rerun()
+
+# Daily Reminder Alert
+if user_profile.get("daily_reminder", True):
+    st.info("🔔 **Daily Reminder:** Don't forget to log today's rehearsal footage and record your stress reflections!")
+
+# Initialize Navigation State
 if "active_section" not in st.session_state:
     st.session_state.active_section = "choreo"
 
@@ -133,14 +311,15 @@ calendar_options = {
 }
 
 # ==========================================
-# SECTION 1: CHOREOGRAPHY + CALENDAR (WITH VIEW/DELETE)
+# SECTION 1: CHOREOGRAPHY + CALENDAR
 # ==========================================
 if st.session_state.active_section == "choreo":
     st.header("Choreography & Media Vault")
     
     col1, col2 = st.columns(2)
     with col1:
-        c_style = st.selectbox("Dance Style:", ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Other"], key="c_style")
+        default_idx = DANCE_STYLES.index(user_profile.get("dance_style", "Bharathanatyam")) if user_profile.get("dance_style") in DANCE_STYLES else 0
+        c_style = st.selectbox("Dance Style:", DANCE_STYLES, index=default_idx, key="c_style")
         c_piece = st.text_input("Song / Piece Title:", placeholder="e.g., Tillana, Swan Lake", key="c_piece")
         c_date = st.date_input("Practice Date:", datetime.now(), key="c_date")
     with col2:
@@ -165,7 +344,8 @@ if st.session_state.active_section == "choreo":
                 "style": c_style,
                 "piece": c_piece.strip(),
                 "path": filepath,
-                "file_type": ext
+                "file_type": ext,
+                "user": st.session_state.user_email
             })
             save_db(db)
             st.success(f"Successfully saved choreography for '{c_piece}'!")
@@ -182,8 +362,9 @@ if st.session_state.active_section == "choreo":
     
     events = []
     for item in choreo_items:
+        item_id = item.get("id", item.get("timestamp"))
         events.append({
-            "id": item.get("id", item.get("timestamp")),
+            "id": item_id,
             "title": f"📹 {item['piece']}",
             "start": item["date"],
             "end": item["date"],
@@ -203,11 +384,11 @@ if st.session_state.active_section == "choreo":
     st.divider()
     st.subheader("📹 Rehearsal Viewer & Actions")
 
-    # If clicked directly on an event button on the calendar
     if selected_event_id:
-        target_items = [x for x in choreo_items if x.get("id") == selected_event_id or x.get("timestamp") == selected_event_id]
+        target_items = [x for x in choreo_items if x.get("id", x.get("timestamp")) == selected_event_id]
         if target_items:
             item = target_items[0]
+            item_id = item.get("id", item.get("timestamp"))
             st.markdown(f"### Selected Piece: **{item['piece']}** ({item['style']})")
             st.write(f"**Recorded Date:** {item['date']}")
             
@@ -216,23 +397,23 @@ if st.session_state.active_section == "choreo":
             else:
                 st.audio(item['path'])
                 
-            if st.button(f"🗑️ Delete Choreography '{item['piece']}'", key=f"del_{item['id']}"):
-                delete_entry(item['id'])
+            if st.button(f"🗑️ Delete Choreography '{item['piece']}'", key=f"del_{item_id}"):
+                delete_entry(item_id)
                 st.success("Choreography entry successfully deleted.")
                 st.rerun()
 
-    # If clicked on a general calendar date
     elif selected_date:
         filtered = [x for x in choreo_items if x["date"] == selected_date]
         if filtered:
             for item in filtered:
+                item_id = item.get("id", item.get("timestamp"))
                 with st.expander(f"🎵 {item['piece']} - {item['style']} ({item['date']})"):
                     if item['file_type'] in ['mp4', 'mov', 'avi']:
                         st.video(item['path'])
                     else:
                         st.audio(item['path'])
-                    if st.button("Delete Entry 🗑️", key=f"del_date_{item['id']}"):
-                        delete_entry(item['id'])
+                    if st.button("Delete Entry 🗑️", key=f"del_date_{item_id}"):
+                        delete_entry(item_id)
                         st.success("Entry deleted.")
                         st.rerun()
         else:
@@ -241,7 +422,7 @@ if st.session_state.active_section == "choreo":
         st.info("Click any event on the calendar above to view or delete.")
 
 # ==========================================
-# SECTION 2: STRESS JOURNAL + CALENDAR (WITH VIEW/DELETE)
+# SECTION 2: STRESS JOURNAL + CALENDAR
 # ==========================================
 elif st.session_state.active_section == "stress":
     st.header("Mental Stress Journal & Neuro-Breathing Lounge")
@@ -259,7 +440,8 @@ elif st.session_state.active_section == "stress":
             "type": "stress",
             "date": str(s_date),
             "stress_level": s_level,
-            "notes": s_notes
+            "notes": s_notes,
+            "user": st.session_state.user_email
         })
         save_db(db)
         st.success("Journal entry saved successfully!")
@@ -319,8 +501,9 @@ elif st.session_state.active_section == "stress":
     
     stress_events = []
     for item in stress_items:
+        item_id = item.get("id", item.get("timestamp"))
         stress_events.append({
-            "id": item.get("id", item.get("timestamp")),
+            "id": item_id,
             "title": f"🧠 Stress: {item['stress_level']}/10",
             "start": item["date"],
             "end": item["date"],
@@ -341,14 +524,15 @@ elif st.session_state.active_section == "stress":
     st.subheader("🧠 Journal Review & Actions")
 
     if selected_stress_id:
-        target_stress = [x for x in stress_items if x.get("id") == selected_stress_id or x.get("timestamp") == selected_stress_id]
+        target_stress = [x for x in stress_items if x.get("id", x.get("timestamp")) == selected_stress_id]
         if target_stress:
             item = target_stress[0]
+            item_id = item.get("id", item.get("timestamp"))
             st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
             st.write(f"**Journal Entry:** {item['notes']}")
             
-            if st.button("🗑️ Delete Journal Entry", key=f"del_st_{item['id']}"):
-                delete_entry(item['id'])
+            if st.button("🗑️ Delete Journal Entry", key=f"del_st_{item_id}"):
+                delete_entry(item_id)
                 st.success("Journal entry deleted.")
                 st.rerun()
 
@@ -356,10 +540,11 @@ elif st.session_state.active_section == "stress":
         filtered = [x for x in stress_items if x["date"] == selected_stress_date]
         if filtered:
             for item in filtered:
+                item_id = item.get("id", item.get("timestamp"))
                 st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
                 st.write(f"*Journal Notes:* {item['notes']}")
-                if st.button("Delete Entry 🗑️", key=f"del_st_date_{item['id']}"):
-                    delete_entry(item['id'])
+                if st.button("Delete Entry 🗑️", key=f"del_st_date_{item_id}"):
+                    delete_entry(item_id)
                     st.success("Entry deleted.")
                     st.rerun()
                 st.divider()
