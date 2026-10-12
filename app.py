@@ -745,7 +745,7 @@ elif st.session_state.active_section == "pain":
 
     with recovery_tab2:
         st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
-        st.write("Click on any location pin on the map or select a clinic below to view its full details.")
+        st.write("Each numbered pin on the map corresponds directly to the matching numbered button below.")
 
         # Default Center: NYC
         map_lat, map_lon = 40.7380, -73.9800
@@ -769,9 +769,10 @@ elif st.session_state.active_section == "pain":
                 map_lon = loc["coords"]["longitude"]
                 st.info("📍 Current browser location detected.")
 
-        # Real Location Pin Data
+        # Real Location Pin Data with Number Labels
         clinic_data = [
             {
+                "label": "1",
                 "name": "Harkness Center for Dance Injuries",
                 "doctor_type": "Dance Physician & Specialized Medical Staff",
                 "phone": "(212) 598-6000",
@@ -780,6 +781,7 @@ elif st.session_state.active_section == "pain":
                 "description": "Comprehensive orthopedic and dance-medicine diagnostic center."
             },
             {
+                "label": "2",
                 "name": "Somatic Dance Physical Therapy",
                 "doctor_type": "Physical Therapist",
                 "phone": "(212) 349-1100",
@@ -788,6 +790,7 @@ elif st.session_state.active_section == "pain":
                 "description": "Specialized manual therapy, rehab, and pointe readiness assessments."
             },
             {
+                "label": "3",
                 "name": "Regional Sports & Performing Arts Medicine",
                 "doctor_type": "Sports Medicine Doctor",
                 "phone": "(212) 263-6000",
@@ -796,6 +799,7 @@ elif st.session_state.active_section == "pain":
                 "description": "Non-surgical joint, tendon alignment, and biomechanical analysis."
             },
             {
+                "label": "4",
                 "name": "Somatic Athletic Training Lab",
                 "doctor_type": "Certified Athletic Trainer",
                 "phone": "(212) 807-7000",
@@ -804,6 +808,7 @@ elif st.session_state.active_section == "pain":
                 "description": "On-site performance taping, neuromuscular re-education, and recovery."
             },
             {
+                "label": "5",
                 "name": "Center for Performing Arts Orthopedics",
                 "doctor_type": "Orthopedic Specialist",
                 "phone": "(212) 774-2000",
@@ -815,27 +820,40 @@ elif st.session_state.active_section == "pain":
 
         df_clinics = pd.DataFrame(clinic_data)
 
-        # PyDeck Scatterplot Layer
-        view_state = pdk.ViewState(
-            latitude=map_lat,
-            longitude=map_lon,
-            zoom=12.5,
-            pitch=30
-        )
-
-        layer = pdk.Layer(
+        # PyDeck Scatterplot Layer (Red Circle Pin Background)
+        circle_layer = pdk.Layer(
             "ScatterplotLayer",
             df_clinics,
             get_position=["lon", "lat"],
-            get_color=[220, 50, 50, 230],
-            get_radius=220,
+            get_color=[220, 50, 50, 240],
+            get_radius=250,
             pickable=True,
             auto_highlight=True
         )
 
+        # PyDeck Text Layer (White Number Label matching buttons)
+        text_layer = pdk.Layer(
+            "TextLayer",
+            df_clinics,
+            get_position=["lon", "lat"],
+            get_text="label",
+            get_size=18,
+            get_color=[255, 255, 255, 255],
+            get_angle=0,
+            get_text_anchor="'middle'",
+            get_alignment_baseline="'center'"
+        )
+
+        view_state = pdk.ViewState(
+            latitude=map_lat,
+            longitude=map_lon,
+            zoom=12.5,
+            pitch=0
+        )
+
         tooltip_html = """
         <div style="background-color: white; color: #4A3E3D; padding: 12px; border-radius: 10px; font-family: sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.15); max-width: 280px;">
-            <h4 style="margin:0 0 5px 0; color:#D893A4;">📍 {name}</h4>
+            <h4 style="margin:0 0 5px 0; color:#D893A4;">📍 Pin #{label}: {name}</h4>
             <p style="margin:3px 0; font-size:12px;"><b>Role:</b> {doctor_type}</p>
             <p style="margin:3px 0; font-size:12px;"><b>Address:</b> {address}</p>
             <p style="margin:3px 0; font-size:12px;"><b>Phone:</b> {phone}</p>
@@ -844,26 +862,26 @@ elif st.session_state.active_section == "pain":
         """
 
         r = pdk.Deck(
-            layers=[layer],
+            layers=[circle_layer, text_layer],
             initial_view_state=view_state,
             tooltip={"html": tooltip_html}
         )
 
         st.pydeck_chart(r)
 
-        # Interactive Clinic Click Cards
-        st.markdown("#### 🏥 Select Location Pin Below to View Complete Profile:")
+        # Numbered Clinic Option Buttons matching Map Pins
+        st.markdown("#### 🏥 Select Map Pin Number Below to View Full Clinic Profile:")
         c_cols = st.columns(len(clinic_data))
         for idx, clinic in enumerate(clinic_data):
             with c_cols[idx]:
-                if st.button(f"📍 Location {idx+1}", key=f"btn_clinic_{idx}"):
+                if st.button(f"📍 Pin #{clinic['label']}", key=f"btn_clinic_{idx}"):
                     st.session_state.selected_clinic = clinic
 
         if st.session_state.selected_clinic:
             sel = st.session_state.selected_clinic
             st.markdown(f"""
             <div class="clinic-card">
-                <h3>📍 {sel['name']}</h3>
+                <h3>📍 Pin #{sel['label']} — {sel['name']}</h3>
                 <p><b>Role / Specialty:</b> {sel['doctor_type']}</p>
                 <p><b>Address:</b> {sel['address']}</p>
                 <p><b>Phone:</b> {sel['phone']}</p>
@@ -898,7 +916,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
-    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to display dance-specialized medical providers near you. Click on any location pin or button below the map to display the clinic's address, doctor role, phone number, and specialized services.
+    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to display dance-specialized medical providers near you. Each red numbered pin on the map directly matches the numbered buttons below.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style (chosen from 50 styles), or reminder preferences.
