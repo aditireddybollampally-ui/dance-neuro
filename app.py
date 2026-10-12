@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 # Page Configuration
-st.set_page_config(page_title="NeuroDance & Recovery Vault", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="NeuroDance Vault", page_icon="🩰", layout="wide")
 
 VAULT_DIR = "./local_dance_vault"
 DB_FILE = "./vault_database.json"
@@ -21,106 +21,108 @@ def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-st.title("🧠 NeuroDance: Biomechanical & Mental Recovery Vault")
-st.markdown("*A localized edge-computing web tool designed to track somatic stress, organize rehearsal media offline, and deliver automated neuromuscular recovery protocols for dancers.*")
+st.title("🩰 NeuroDance: Modular Recovery & Choreo Vault")
+st.markdown("*A modular local web tool designed to independently track choreography, mental stress, and somatic pain.*")
 
-tab1, tab2, tab3 = st.tabs(["📁 Local Media Vault & Logger", "📊 Repertoire & Song Catalog", "🧬 AI Neuro-Recovery Engine"])
+# Creating separate standalone tabs as requested
+tab_choreo, tab_stress, tab_pain = st.tabs(["📹 Log Choreography", "🧠 Stress Tracker", "🧘 Pain & AI Recovery"])
 
 # ==========================================
-# TAB 1: LOGGING & LOCAL FILE STORAGE
+# TAB 1: LOG CHOREOGRAPHY ONLY
 # ==========================================
-with tab1:
-    st.header("Session Logging & Offline Video Storage")
+with tab_choreo:
+    st.header("Choreography & Media Upload")
+    st.write("Log your piece, date, and save your practice videos or audio files locally without touching stress or pain metrics.")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        dance_style = st.selectbox("Discipline:", ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Other"])
-        piece_title = st.text_input("Piece / Song Title:", placeholder="e.g., Varnam, Swan Lake Variation")
-        session_date = st.date_input("Practice Date:", datetime.now())
-    with col2:
-        mental_load = st.slider("Cognitive / Performance Stress (1-10):", 1, 10, 5)
-        somatic_pain = st.multiselect("Localized Physical Pain / Strain:", [
-            "Plantar Fascia / Arch", "Achilles / Calf", "Lumbar Spine (Lower Back)", 
-            "Hip Flexors / Hamstrings", "Cervical Spine / Neck & Shoulders"
-        ])
-        notes = st.text_area("Choreography Notes / Mental State:")
-
-    media_file = st.file_uploader("Upload Rehearsal Video/Audio (Saved locally to bypass cloud limits):", type=["mp4", "mov", "avi", "mp3"])
-
-    if st.button("Commit to Local Vault 💾"):
-        if piece_title and media_file:
+    c_style = st.selectbox("Dance Style:", ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Other"], key="c_style")
+    c_piece = st.text_input("Song / Piece Title:", placeholder="e.g., Tillana, Swan Lake", key="c_piece")
+    c_date = st.date_input("Practice Date:", datetime.now(), key="c_date")
+    c_file = st.file_uploader("Upload Rehearsal Media (Saved Locally):", type=["mp4", "mov", "avi", "mp3"], key="c_file")
+    
+    if st.button("Save Choreography 💾"):
+        if c_piece and c_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            ext = media_file.name.split(".")[-1]
-            filename = f"{timestamp}_{piece_title.replace(' ', '_')}.{ext}"
+            ext = c_file.name.split(".")[-1]
+            filename = f"{timestamp}_{c_piece.replace(' ', '_')}.{ext}"
             filepath = os.path.join(VAULT_DIR, filename)
             
-            # Save bytes directly to local directory
             with open(filepath, "wb") as f:
-                f.write(media_file.getbuffer())
+                f.write(c_file.getbuffer())
                 
             db = load_db()
             db.append({
                 "timestamp": timestamp,
-                "date": str(session_date),
-                "style": dance_style,
-                "piece": piece_title.strip(),
-                "stress": mental_load,
-                "pain": somatic_pain,
-                "notes": notes,
+                "type": "choreo",
+                "date": str(c_date),
+                "style": c_style,
+                "piece": c_piece.strip(),
                 "path": filepath,
-                "type": ext
+                "file_type": ext
             })
             save_db(db)
-            st.success(f"Successfully cached clip locally under piece: '{piece_title}'")
+            st.success(f"Successfully saved choreography for '{c_piece}'!")
         else:
-            st.error("Please provide a Piece Title and upload a media file.")
-
-# ==========================================
-# TAB 2: MULTI-INDEX CATALOGING
-# ==========================================
-with tab2:
-    st.header("🗂️ Multi-Index Repertoire Catalog")
-    db = load_db()
-    
-    if not db:
-        st.info("Vault is empty. Log a session in Tab 1.")
-    else:
-        df = pd.DataFrame(db)
-        view_mode = st.radio("Organize Archive By:", ["Group by Song / Piece Name", "Chronological Timeline"], horizontal=True)
-        
-        if view_mode == "Group by Song / Piece Name":
-            selected_piece = st.selectbox("Select Piece:", df["piece"].unique())
-            piece_subset = df[df["piece"] == selected_piece]
-            st.subheader(f"Accessing {len(piece_subset)} recorded iterations of '{selected_piece}'")
+            st.error("Please provide a piece title and upload a media file.")
             
-            for _, row in piece_subset.iterrows():
-                with st.expander(f"📅 Date: {row['date']} | Stress Index: {row['stress']}/10"):
-                    st.write(f"**Notes:** {row['notes']}")
-                    if row['pain']:
-                        st.markdown(f"⚠️ **Reported Strain:** {', '.join(row['pain'])}")
-                    if row['type'] in ['mp4', 'mov', 'avi']:
-                        st.video(row['path'])
-                    else:
-                        st.audio(row['path'])
-        else:
-            df_sorted = df.sort_values(by="date", ascending=False)
-            for _, row in df_sorted.iterrows():
-                with st.expander(f"🎵 {row['piece']} — {row['date']} ({row['style']})"):
-                    st.write(f"**Stress Level:** {row['stress']} | **Pain Areas:** {row['pain']}")
-                    if row['type'] in ['mp4', 'mov', 'avi']:
-                        st.video(row['path'])
+    st.divider()
+    st.subheader("Saved Choreography Archive")
+    db = load_db()
+    choreo_items = [x for x in db if x.get("type") == "choreo"]
+    if choreo_items:
+        for item in choreo_items:
+            with st.expander(f"🎵 {item['piece']} ({item['date']}) - {item['style']}"):
+                if item['file_type'] in ['mp4', 'mov', 'avi']:
+                    st.video(item['path'])
+                else:
+                    st.audio(item['path'])
+    else:
+        st.info("No choreography saved yet.")
 
 # ==========================================
-# TAB 3: AI PAIN-TARGETED RECOVERY ENGINE
+# TAB 2: STRESS TRACKER ONLY
 # ==========================================
-with tab3:
-    st.header("🧬 AI-Driven Neuromuscular Stretch Protocol")
-    st.write("Dynamic recommendation matrix based on somatic pain inputs and cognitive stress indexes.")
+with tab_stress:
+    st.header("Mental & Performance Stress Tracker")
+    st.write("Log how you're feeling mentally—completely independent of your choreography or physical logs.")
     
-    # AI logic mapping pain points to neuro-rehab routines
+    s_date = st.date_input("Date:", datetime.now(), key="s_date")
+    s_level = st.slider("Mental Strain / Anxiety Level (1-10):", 1, 10, 5, key="s_level")
+    s_notes = st.text_area("Mental State Reflection / Thoughts to Unload:", placeholder="e.g., Felt pressured about timing today...", key="s_notes")
+    
+    if st.button("Log Mental Stress 🧠"):
+        db = load_db()
+        db.append({
+            "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
+            "type": "stress",
+            "date": str(s_date),
+            "stress_level": s_level,
+            "notes": s_notes
+        })
+        save_db(db)
+        st.success("Stress log saved successfully!")
+        
+    st.divider()
+    st.subheader("Past Stress Logs")
+    db = load_db()
+    stress_items = [x for x in db if x.get("type") == "stress"]
+    if stress_items:
+        for item in stress_items:
+            st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
+            st.write(f"*Notes:* {item['notes']}")
+            st.divider()
+    else:
+        st.info("No stress logs recorded yet.")
+
+# ==========================================
+# TAB 3: PAIN & AI RECOVERY ONLY
+# ==========================================
+with tab_pain:
+    st.header("Physical Pain & AI Recovery Matrix")
+    st.write("Select a specific area of somatic tension to immediately trigger your customized neuromuscular recovery protocol.")
+    
     ai_recommendations = {
         "Plantar Fascia / Arch": {
-            "mechanism": "High impact shock absorption stress (common in classical foot-stamping like Bharathanatyam Aramandi/Mandai stings).",
+            "mechanism": "High impact shock absorption stress (common in classical foot-stamping).",
             "protocol": "1. Myofascial release using a lacrosse ball under the medial longitudinal arch (2 mins).\n2. Eccentric calf drops to unload insertion points."
         },
         "Achilles / Calf": {
@@ -129,27 +131,22 @@ with tab3:
         },
         "Lumbar Spine (Lower Back)": {
             "mechanism": "Compensatory extension strain during postural alignment or core fatigue.",
-            "protocol": "1. Cat-Camel spinal articulation to reset proprioception.\n2. Dead-bug core stabilization activation to unload lumbar extensors."
+            "protocol": "1. Cat-Camel spinal articulation to reset proprioception.\n2. Dead-bug core stabilization activation."
         },
         "Hip Flexors / Hamstrings": {
             "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
             "protocol": "1. 90/90 hip transitions for internal/external rotation.\n2. PNF contract-relax stretching for hamstrings."
         },
         "Cervical Spine / Neck & Shoulders": {
-            "mechanism": "Sympathetic nervous system elevation ('fight-or-flight' performance anxiety translation into upper trapezius tension).",
-            "protocol": "1. Vagus nerve stimulation: 4-7-8 diaphragmatic breathing block.\n2. Scapular retraction and thoracic spine foam rolling."
+            "mechanism": "Sympathetic nervous system elevation translated into upper trapezius tension.",
+            "protocol": "1. Vagus nerve stimulation: 4-7-8 diaphragmatic breathing block.\n2. Scapular retraction and thoracic spine rolling."
         }
     }
     
-    selected_issues = st.multiselect("Select active strain areas for real-time recovery synthesis:", list(ai_recommendations.keys()))
+    selected_pain = st.selectbox("Select Active Pain Area:", list(ai_recommendations.keys()))
     
-    if st.button("Generate Personalized Protocol ⚙️"):
-        if not selected_issues:
-            st.info("Please select at least one strain area above.")
-        else:
-            for issue in selected_issues:
-                data = ai_recommendations[issue]
-                st.markdown(f"### 🎯 Target System: {issue}")
-                st.info(f"**Biomechanical Analysis:** {data['mechanism']}")
-                st.success(f"**Prescribed Action Protocol:**\n{data['protocol']}")
-                st.divider()
+    if st.button("Generate Recovery Protocol ⚙️"):
+        data = ai_recommendations[selected_pain]
+        st.markdown(f"### 🎯 Target System: {selected_pain}")
+        st.info(f"**Biomechanical Analysis:** {data['mechanism']}")
+        st.success(f"**Prescribed Action Protocol:**\n{data['protocol']}")
