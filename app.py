@@ -3,747 +3,569 @@ import pandas as pd
 import os
 import json
 import random
-import smtplib
-from email.mime.text import MIMEText
+import time
 from datetime import datetime
 from streamlit_calendar import calendar
 
-# Page Configuration
-st.set_page_config(page_title="DanceVault", page_icon="🩰", layout="wide")
+# ==========================================
+# PAGE CONF & GLOBAL AESTHETICS
+# ==========================================
+st.set_page_config(
+    page_title="DanceVault | Modular NeuroDance Vault", 
+    page_icon="🩰", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
+# Define the "Berry Calming" Palette
+PALETTE = {
+    "bg": "#FDFBFB",       # Main background
+    "card": "#FFFFFF",     # Content cards
+    "border": "#EBEDEE",   # Subtle borders
+    "text": "#4A3E3D",     # Dark brown text
+    "caption": "#7A6A68",  # Muted brown captions
+    "accent_1": "#CE8127", # Gold/Tan accent
+    "accent_2": "#D893A4", # Rose accent
+    "accent_3": "#E5A38F", # Peach accent
+    "accent_4": "#D8BFCE"  # Lavender accent
+}
+
+# Apply Global CSS for fonts, backgrounds, buttons, and inputs
+st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Great+Vibes&display=swap');
+
+    /* Global aesthetic setup */
+    .stApp {{
+        background-color: {PALETTE["bg"]};
+        color: {PALETTE["text"]};
+        font-family: 'Playfair Display', serif;
+    }
+
+    /* Elegant Titles */
+    .main-title {{
+        font-family: 'Cinzel', serif;
+        color: {PALETTE["accent_1"]} !important;
+        text-align: center;
+        font-weight: 600;
+        letter-spacing: 2px;
+        font-size: 3.5rem;
+        margin-bottom: 0rem;
+        padding-top: 1rem;
+    }}
+
+    .script-subtitle {{
+        font-family: 'Great Vibes', cursive;
+        font-size: 2rem !important;
+        color: {PALETTE["accent_2"]};
+        text-align: center;
+        margin-top: -1.2rem;
+        margin-bottom: 3rem;
+    }}
+
+    h1, h2, h3, h4 {{
+        font-family: 'Cinzel', serif !important;
+        font-weight: 400;
+        color: {PALETTE["accent_2"]} !important;
+        margin-top: 2rem;
+    }}
+
+    /* Container Aesthetic */
+    div[data-testid="stVerticalBlock"] > div:has(div.stExpander),
+    div[data-testid="stVerticalBlock"] > div:has(div.stTabs),
+    div.login-card {{
+        background-color: {PALETTE["card"]};
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+        border: 1px solid {PALETTE["border"]};
+    }}
+
+    /* Buttons aesthetic */
+    .stButton>button {{
+        background: linear-gradient(135deg, {PALETTE["accent_3"]} 0%, {PALETTE["accent_2"]} 100%) !important;
+        color: white !important;
+        border-radius: 25px !important;
+        border: none !important;
+        font-family: 'Cinzel', serif !important;
+        font-weight: 600;
+        font-size: 1rem;
+        letter-spacing: 1px;
+        padding: 0.7rem 2.5rem !important;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(216, 147, 164, 0.3);
+        width: 100%;
+        margin-top: 1rem;
+    }}
+
+    .stButton>button:hover {{
+        background: linear-gradient(135deg, {PALETTE["accent_2"]} 0%, {PALETTE["accent_3"]} 100%) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(216, 147, 164, 0.4);
+        color: white !important;
+    }}
+    
+    /* Input & Select styling */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {{
+        border-radius: 12px !important;
+        border: 1px solid {PALETTE["border"]} !important;
+        font-family: 'Playfair Display', serif;
+        background-color: #f8f9fa !important;
+    }}
+    
+    .stTextInput label, .stTextArea label, .stSelectbox label, .stSlider label {{
+        color: {PALETTE["caption"]} !important;
+        font-size: 0.9rem !important;
+        font-style: italic;
+    }}
+
+    /* Navi container aesthetic */
+    div[data-testid="stHorizontalBlock"] {{
+        background-color: {PALETTE["card"]};
+        padding: 1rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        margin-bottom: 2rem;
+        border: 1px solid {PALETTE["border"]};
+    }}
+
+    /* Calendar aesthetic corrections */
+    .fc-theme-standard .fc-scrollgrid {{ border: 1px solid {PALETTE["border"]} !important; }}
+    .fc-daygrid-day.fc-day-today {{ background-color: rgba(216, 147, 164, 0.04) !important; }}
+    .fc-event {{ border-radius: 6px; padding: 3px; border: none; font-family: 'Cinzel', serif; font-size: 0.8rem; }}
+
+    /* Breathing GUI layout */
+    .breathing-container {{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: {PALETTE["card"]};
+        padding: 3rem;
+        border-radius: 25px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+        text-align: center;
+        border: 1px solid {PALETTE["border"]};
+        margin-top: 2rem;
+    }}
+    </style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# LOCAL DATA & DIRECTORY SETUP
+# ==========================================
 VAULT_DIR = "./local_dance_vault"
 DB_FILE = "./vault_database.json"
 USER_DB_FILE = "./users_database.json"
 os.makedirs(VAULT_DIR, exist_ok=True)
 
-def load_db():
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r") as f:
-            data = json.load(f)
-            for item in data:
-                if "id" not in item:
-                    item["id"] = item.get("timestamp", str(datetime.now().timestamp()))
-            return data
-    return []
+def load_json(filename, default_type):
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            return json.load(f)
+    return default_type
 
-def save_db(data):
-    with open(DB_FILE, "w") as f:
+def save_json(data, filename):
+    with open(filename, "w") as f:
         json.dump(data, f, indent=4)
 
-def load_users():
-    if os.path.exists(USER_DB_FILE):
-        with open(USER_DB_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_users(users):
-    with open(USER_DB_FILE, "w") as f:
-        json.dump(users, f, indent=4)
-
-def delete_entry(entry_id):
-    db = load_db()
-    updated_db = []
-    for item in db:
-        item_id = item.get("id", item.get("timestamp"))
-        if item_id == entry_id:
+def delete_local_entry(entry_id, db_items):
+    updated_items = []
+    for item in db_items:
+        if item.get("id") == entry_id:
             if "path" in item and os.path.exists(item["path"]):
                 try:
                     os.remove(item["path"])
                 except Exception:
                     pass
         else:
-            updated_db.append(item)
-    save_db(updated_db)
+            updated_items.append(item)
+    return updated_items
 
-# Helper function to generate a 6-digit verification code
-def generate_code():
-    return str(random.randint(100000, 999999))
-
-# Helper function to simulate/send verification email
-def send_verification_email(to_email, code, purpose="verification"):
-    # In production, configure standard SMTP parameters or secrets
-    # For local testing, code is displayed in an alert and simulated securely
-    st.toast(f"📧 [Email Simulation] {purpose.capitalize()} code for {to_email}: {code}", icon="📩")
+def generate_code(): return str(random.randint(100000, 999999))
+def simulate_email(to_email, code, purpose):
+    st.toast(f"📧 Simulation for {to_email}: {purpose.capitalize()} code: {code}", icon="📩")
 
 # ==========================================
-# CUSTOM AESTHETIC STYLING (Berry Calming Palette)
+# INITIALIZE SESSION STATE
 # ==========================================
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Great+Vibes&family=Cinzel:wght@400..700&display=swap');
-
-    .stApp {
-        background: linear-gradient(135deg, #EDDFD9 0%, #D8BFCE 50%, #E5A38F 100%);
-        color: #4A3E3D;
-        font-family: 'Playfair Display', Georgia, serif;
-    }
-
-    h1 {
-        font-family: 'Cinzel', serif !important;
-        color: #CE8127 !important;
-        text-align: center;
-        font-weight: 600 !important;
-        letter-spacing: 1px;
-    }
-
-    h2, h3 {
-        font-family: 'Playfair Display', serif !important;
-        color: #D893A4 !important;
-    }
-
-    .script-subtitle {
-        font-family: 'Great Vibes', cursive;
-        font-size: 28px !important;
-        color: #D893A4;
-        text-align: center;
-        margin-top: -15px;
-        margin-bottom: 25px;
-    }
-
-    /* Form Labels & Underline Fields */
-    .stTextInput label {
-        font-family: 'Playfair Display', serif !important;
-        color: #7A6A68 !important;
-        font-size: 13px !important;
-        text-align: left !important;
-        display: block !important;
-    }
-
-    .stTextInput input {
-        border: none !important;
-        border-bottom: 2px solid #D8BFCE !important;
-        border-radius: 0px !important;
-        background-color: transparent !important;
-        color: #4A3E3D !important;
-        padding-left: 5px !important;
-        font-family: 'Playfair Display', serif !important;
-    }
-
-    .stTextInput input:focus {
-        border-bottom: 2px solid #CE8127 !important;
-        box-shadow: none !important;
-    }
-
-    /* Berry Calming Pill Buttons */
-    .stButton>button {
-        background: linear-gradient(135deg, #E5A38F 0%, #D893A4 100%) !important;
-        color: #FFFFFF !important;
-        border-radius: 25px !important;
-        border: none !important;
-        font-family: 'Cinzel', serif !important;
-        font-size: 15px !important;
-        font-weight: 600 !important;
-        padding: 10px 25px !important;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(216, 147, 164, 0.4);
-        width: 100%;
-        margin-top: 15px;
-    }
-
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #CE8127 0%, #E5A38F 100%) !important;
-        color: #FFFFFF !important;
-        transform: translateY(-2px);
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# ==========================================
-# AUTHENTICATION STATE MANAGEMENT
-# ==========================================
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "user_email" not in st.session_state:
-    st.session_state.user_email = ""
-if "auth_page" not in st.session_state:
-    st.session_state.auth_page = "login"
-if "verification_code" not in st.session_state:
-    st.session_state.verification_code = ""
-if "pending_user" not in st.session_state:
-    st.session_state.pending_user = {}
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "user_email" not in st.session_state: st.session_state.user_email = ""
+if "auth_page" not in st.session_state: st.session_state.auth_page = "login"
+if "verification_code" not in st.session_state: st.session_state.verification_code = ""
+if "pending_user" not in st.session_state: st.session_state.pending_user = {}
+if "active_section" not in st.session_state: st.session_state.active_section = "choreo"
+if 'breathing_active' not in st.session_state: st.session_state.breathing_active = False
 
 DANCE_STYLES = ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Jazz", "Tap", "Other"]
 AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
 
-# If not logged in, render Auth Gateway
+# ==========================================
+# GATEWAY (Sign In / Sign Up)
+# ==========================================
 if not st.session_state.logged_in:
-    st.markdown("<h1>🩰 DanceVault</h1>", unsafe_allow_html=True)
-    st.markdown("<div class='script-subtitle'>Dance. Track. Breathe. Stretch. Repeat.</div>", unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title">DanceVault</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="script-subtitle">Dance. Track. Breathe. Stretch. Repeat.</div>', unsafe_allow_html=True)
     
-    col_l, col_center, col_r = st.columns([1, 1.2, 1])
-    users = load_users()
+    col_l, col_center, col_r = st.columns([1, 1.3, 1])
+    users = load_json(USER_DB_FILE, {})
     
     with col_center:
-        # LOGIN SCREEN
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        
         if st.session_state.auth_page == "login":
-            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Login</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; margin-top:0;'>Welcome Back</h2>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             
-            email_input = st.text_input("Username / Email", placeholder="Type your email", key="si_email")
-            pass_input = st.text_input("Password", type="password", placeholder="Type your password", key="si_pass")
+            email_input = st.text_input("Vault ID (Email)", placeholder="your.email@dance.com", key="si_email")
+            pass_input = st.text_input("Access Key (Password)", type="password", placeholder="••••••••", key="si_pass")
             
-            col_fp1, col_fp2 = st.columns([1, 1])
-            with col_fp2:
-                if st.button("Forgot password?", key="btn_to_fp"):
-                    st.session_state.auth_page = "forgot_request"
-                    st.rerun()
-            
-            if st.button("LOGIN", key="btn_login_submit"):
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("OPEN VAULT 🚀", key="btn_login_submit"):
                 if email_input in users:
-                    if not users[email_input].get("verified", True):
-                        st.error("Please verify your email address first.")
+                    if not users[email_input].get("verified", True): st.error("Please verify email first.")
                     elif users[email_input]["password"] == pass_input:
                         st.session_state.logged_in = True
                         st.session_state.user_email = email_input
-                        st.success("Welcome back!")
+                        st.success("Vault Opened.")
                         st.rerun()
-                    else:
-                        st.error("Invalid password.")
-                else:
-                    st.error("Invalid email address.")
+                    else: st.error("Invalid key.")
+                else: st.error("ID not recognized.")
             
-            st.markdown("<p style='text-align: center; color: #7A6A68; font-size: 12px; margin-top: 20px;'>Or Sign In Using</p>", unsafe_allow_html=True)
-            if st.button("🔵 Google Sign-In", key="btn_google_login"):
-                google_email = "dancer.google@gmail.com"
-                if google_email not in users:
-                    users[google_email] = {
-                        "password": "google_oauth_user",
-                        "full_name": "Google User",
-                        "preferred_name": "Dancer",
-                        "dance_style": "Bharathanatyam",
-                        "daily_reminder": True,
-                        "avatar": "🩰",
-                        "verified": True
-                    }
-                    save_users(users)
-                st.session_state.logged_in = True
-                st.session_state.user_email = google_email
-                st.success("Authenticated with Google!")
-                st.rerun()
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("🔵 Quick Google Access", key="btn_google_login"):
+                    g_email = "dancer.google@gmail.com"
+                    if g_email not in users:
+                        users[g_email] = { "password": "google_oauth_user", "preferred_name": "Dancer", "dance_style": "Other", "verified": True, "avatar": "✨"}
+                        save_json(users, USER_DB_FILE)
+                    st.session_state.logged_in = True
+                    st.session_state.user_email = g_email
+                    st.rerun()
+            with c2:
+                if st.button("Forgot Key?", key="btn_to_fp"):
+                    st.session_state.auth_page = "forgot_request"
+                    st.rerun()
                     
-            st.markdown("<p style='text-align: center; color: #7A6A68; font-size: 12px; margin-top: 25px;'>New to DanceVault?</p>", unsafe_allow_html=True)
-            if st.button("SIGN UP", key="btn_to_signup"):
+            st.markdown(f"<p style='text-align: center; color: {PALETTE['caption']}; font-size: 0.95rem; margin-top: 2rem;'>New to the Vault?</p>", unsafe_allow_html=True)
+            if st.button("INITIALIZE ACCOUNT ✨", key="btn_to_signup"):
                 st.session_state.auth_page = "signup"
                 st.rerun()
 
-        # SIGN UP SCREEN
         elif st.session_state.auth_page == "signup":
-            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Sign Up</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; margin-top:0;'>Initialize Vault</h2>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             
-            new_email = st.text_input("Email Address", placeholder="Type your email", key="su_email")
-            new_pass = st.text_input("Password", type="password", placeholder="Create password", key="su_pass")
-            full_name = st.text_input("Full Name", placeholder="e.g., Maya Rao", key="su_fullname")
-            pref_name = st.text_input("Preferred Name", placeholder="e.g., Maya", key="su_prefname")
-            primary_style = st.selectbox("Primary Dance Style:", DANCE_STYLES, key="su_style")
-            daily_reminder = st.checkbox("Enable daily log reminders", value=True, key="su_reminder")
+            new_email = st.text_input("Email", placeholder="your.email@dance.com", key="su_email")
+            new_pass = st.text_input("Set Key", type="password", placeholder="Choose wisely", key="su_pass")
+            pref_name = st.text_input("Preferred Name", placeholder="e.g., Mia Rao", key="su_prefname")
+            primary_style = st.selectbox("Core Style:", DANCE_STYLES, key="su_style")
             
-            if st.button("SEND VERIFICATION CODE 📩", key="btn_signup_submit"):
-                if new_email and new_pass and full_name and pref_name:
-                    if new_email in users:
-                        st.error("Account already exists. Please login.")
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("REQUEST ACCESS CODE 📩", key="btn_signup_submit"):
+                if new_email and new_pass and pref_name:
+                    if new_email in users: st.error("ID already exists.")
                     else:
                         code = generate_code()
                         st.session_state.verification_code = code
                         st.session_state.pending_user = {
-                            "email": new_email,
-                            "password": new_pass,
-                            "full_name": full_name,
-                            "preferred_name": pref_name,
-                            "dance_style": primary_style,
-                            "daily_reminder": daily_reminder,
-                            "avatar": "🩰",
-                            "verified": False
+                            "email": new_email, "password": new_pass, "preferred_name": pref_name,
+                            "dance_style": primary_style, "verified": False, "avatar": "🩰"
                         }
-                        send_verification_email(new_email, code, "account verification")
+                        simulate_email(new_email, code, "verification")
                         st.session_state.auth_page = "verify_signup"
                         st.rerun()
-                else:
-                    st.error("Please fill out all fields.")
+                else: st.error("Please fill all fields.")
                     
             if st.button("Back to Login", key="btn_back_login"):
                 st.session_state.auth_page = "login"
                 st.rerun()
 
-        # VERIFY SIGN UP CODE SCREEN
         elif st.session_state.auth_page == "verify_signup":
-            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Verify Your Email</h2>", unsafe_allow_html=True)
-            st.info(f"A 6-digit verification code was sent to **{st.session_state.pending_user.get('email')}**.")
+            st.markdown("<h3 style='text-align: center;'>Verify Access</h3>", unsafe_allow_html=True)
+            st.caption(f"Verification code sent to {st.session_state.pending_user.get('email')}.")
+            st.markdown("<br>", unsafe_allow_html=True)
+            code_input = st.text_input("6-Digit Code", key="v_code")
             
-            code_input = st.text_input("Enter 6-Digit Code", placeholder="e.g. 123456", key="v_code")
-            
-            if st.button("VERIFY & COMPLETE SIGN UP ✨", key="btn_complete_signup"):
+            if st.button("OPEN YOUR VAULT ✨", key="btn_complete_signup"):
                 if code_input.strip() == st.session_state.verification_code:
                     pending = st.session_state.pending_user
                     pending["verified"] = True
                     users[pending["email"]] = pending
-                    save_users(users)
-                    
+                    save_json(users, USER_DB_FILE)
                     st.session_state.logged_in = True
                     st.session_state.user_email = pending["email"]
-                    st.success("Email verified successfully! Welcome to DanceVault.")
                     st.rerun()
-                else:
-                    st.error("Invalid verification code. Please check your inbox and try again.")
-                    
-            if st.button("Back", key="btn_back_su"):
-                st.session_state.auth_page = "signup"
-                st.rerun()
+                else: st.error("Invalid code.")
 
-        # FORGOT PASSWORD - REQUEST CODE
         elif st.session_state.auth_page == "forgot_request":
-            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Reset Password</h2>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align: center;'>Reset Key</h3>", unsafe_allow_html=True)
+            reset_email = st.text_input("Vault ID (Email)", key="fp_email")
             
-            reset_email = st.text_input("Enter Registered Email", placeholder="Type your email", key="fp_email")
-            if st.button("SEND RESET CODE 📩", key="btn_fp_submit"):
+            if st.button("SEND RESET CODE", key="btn_fp_submit"):
                 if reset_email in users:
                     code = generate_code()
                     st.session_state.verification_code = code
                     st.session_state.user_email = reset_email
-                    send_verification_email(reset_email, code, "password reset")
+                    simulate_email(reset_email, code, "password reset")
                     st.session_state.auth_page = "forgot_verify"
                     st.rerun()
-                else:
-                    st.error("Email not found in system.")
-                    
-            if st.button("Back to Login", key="btn_back_login_fp"):
+                else: st.error("ID not found.")
+            if st.button("Back", key="btn_back_login_fp"):
                 st.session_state.auth_page = "login"
                 st.rerun()
 
-        # FORGOT PASSWORD - VERIFY CODE & SET NEW PASSWORD
         elif st.session_state.auth_page == "forgot_verify":
-            st.markdown("<h2 style='text-align: center; color: #4A3E3D;'>Set New Password</h2>", unsafe_allow_html=True)
-            st.info(f"Enter the 6-digit reset code sent to **{st.session_state.user_email}**.")
+            st.markdown("<h3 style='text-align: center;'>Set New Key</h3>", unsafe_allow_html=True)
+            code_input = st.text_input("Reset Code", key="reset_code")
+            new_password_input = st.text_input("New Access Key", type="password", key="new_fp_pass")
             
-            code_input = st.text_input("Enter 6-Digit Reset Code", placeholder="e.g. 123456", key="reset_code")
-            new_password_input = st.text_input("Enter New Password", type="password", placeholder="Type new password", key="new_fp_pass")
-            
-            if st.button("UPDATE PASSWORD 🔑", key="btn_update_pass"):
+            if st.button("UPDATE KEY", key="btn_update_pass"):
                 if code_input.strip() == st.session_state.verification_code:
                     if new_password_input:
                         users[st.session_state.user_email]["password"] = new_password_input
-                        save_users(users)
-                        st.success("Password updated successfully! Please sign in.")
+                        save_json(users, USER_DB_FILE)
+                        st.success("Updated! Please sign in.")
                         st.session_state.auth_page = "login"
                         st.rerun()
-                    else:
-                        st.error("Please enter a new password.")
-                else:
-                    st.error("Invalid reset code.")
-                    
-            if st.button("Back", key="btn_back_fp_req"):
-                st.session_state.auth_page = "forgot_request"
-                st.rerun()
-
+                else: st.error("Invalid code.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# Load User Profile Data
-users_db = load_users()
-user_profile = users_db.get(st.session_state.user_email, {
-    "full_name": "Dancer",
-    "preferred_name": "Dancer",
-    "dance_style": "Bharathanatyam",
-    "daily_reminder": True,
-    "avatar": "🩰"
-})
-
 # ==========================================
-# MAIN DASHBOARD
+# LOAD PROFILE & VAULT DATA
 # ==========================================
-st.markdown("<h1>🩰 DanceVault</h1>", unsafe_allow_html=True)
-st.markdown(f"<div class='script-subtitle'>Welcome back, {user_profile.get('avatar', '🩰')} {user_profile.get('preferred_name', 'Dancer')} | Dance. Track. Breathe. Stretch. Repeat.</div>", unsafe_allow_html=True)
+users_db = load_json(USER_DB_FILE, {})
+user_profile = users_db.get(st.session_state.user_email, {})
+vault_db_items = load_json(DB_FILE, [])
 
-# SIDEBAR ACCOUNT SETTINGS
-st.sidebar.markdown(f"### {user_profile.get('avatar', '🩰')} {user_profile.get('preferred_name', 'Dancer')}'s Vault")
-st.sidebar.caption(f"Logged in as: {st.session_state.user_email}")
+st.markdown('<h1 class="main-title">DanceVault</h1>', unsafe_allow_html=True)
+st.markdown(f"<div class='script-subtitle'>Aesthetic NeuroDance Hub for {user_profile.get('avatar', '🩰')} {user_profile.get('preferred_name', 'Dancer')}</div>", unsafe_allow_html=True)
 
-with st.sidebar.expander("⚙️ Account Settings"):
-    new_avatar = st.selectbox("Choose Avatar:", AVATAR_OPTIONS, index=AVATAR_OPTIONS.index(user_profile.get("avatar", "🩰")) if user_profile.get("avatar") in AVATAR_OPTIONS else 0)
-    new_pref_name = st.text_input("Preferred Name:", value=user_profile.get("preferred_name", ""))
-    new_style = st.selectbox("Primary Dance Style:", DANCE_STYLES, index=DANCE_STYLES.index(user_profile.get("dance_style", "Bharathanatyam")) if user_profile.get("dance_style") in DANCE_STYLES else 0)
-    new_reminder = st.checkbox("Daily Log Reminders", value=user_profile.get("daily_reminder", True))
+with st.sidebar:
+    st.markdown(f"<h2>{user_profile.get('avatar', '🩰')} Vault Access</h2>", unsafe_allow_html=True)
+    st.caption(f"ID: {st.session_state.user_email}")
     
-    if st.button("Save Profile Settings 💾"):
-        user_profile["avatar"] = new_avatar
-        user_profile["preferred_name"] = new_pref_name
-        user_profile["dance_style"] = new_style
-        user_profile["daily_reminder"] = new_reminder
-        users_db[st.session_state.user_email] = user_profile
-        save_users(users_db)
-        st.success("Settings updated!")
-        st.rerun()
+    with st.expander("👤 Customize Profile"):
+        new_avatar = st.selectbox("Avatar:", AVATAR_OPTIONS, index=AVATAR_OPTIONS.index(user_profile.get("avatar", "🩰")) if user_profile.get("avatar") in AVATAR_OPTIONS else 0)
+        new_pref_name = st.text_input("Preferred Name:", value=user_profile.get("preferred_name", ""))
+        new_style = st.selectbox("Primary Style:", DANCE_STYLES, index=DANCE_STYLES.index(user_profile.get("dance_style", "Other")) if user_profile.get("dance_style") in DANCE_STYLES else 0)
         
+        if st.button("SAVE PROFILE CHANGES"):
+            user_profile.update({"avatar": new_avatar, "preferred_name": new_pref_name, "dance_style": new_style})
+            users_db[st.session_state.user_email] = user_profile
+            save_json(users_db, USER_DB_FILE)
+            st.toast("Profile updated aesthetically.", icon="✨")
+            st.rerun()
+            
     st.divider()
-    if st.button("🚪 Sign Out"):
+    if st.button("🚪 CLOSE VAULT (Sign Out)"):
         st.session_state.logged_in = False
         st.session_state.user_email = ""
         st.session_state.auth_page = "login"
         st.rerun()
         
-    if st.button("🔴 Delete Account", key="btn_del_acc"):
-        if st.session_state.user_email in users_db:
-            del users_db[st.session_state.user_email]
-            save_users(users_db)
+    if st.button("🔴 PERMANENTLY DELETE ACCOUNT", key="btn_del_acc"):
+        updated_db = [x for x in vault_db_items if x.get("user") != st.session_state.user_email]
+        save_json(updated_db, DB_FILE)
+        if st.session_state.user_email in users_db: del users_db[st.session_state.user_email]
+        save_json(users_db, USER_DB_FILE)
         st.session_state.logged_in = False
-        st.session_state.user_email = ""
         st.session_state.auth_page = "login"
-        st.success("Account deleted.")
         st.rerun()
 
-# Daily Reminder Alert
-if user_profile.get("daily_reminder", True):
-    st.info("🔔 **Daily Reminder:** Don't forget to log today's rehearsal footage and record your stress reflections!")
-
-# Initialize Navigation State
-if "active_section" not in st.session_state:
-    st.session_state.active_section = "choreo"
-
-# Section Navigation Buttons
 nav_col1, nav_col2, nav_col3 = st.columns(3)
 with nav_col1:
-    if st.button("📹 Choreography & Calendar"):
-        st.session_state.active_section = "choreo"
+    if st.button("📹 MEDIA VAULT", key="nav_choreo"): st.session_state.active_section = "choreo"
 with nav_col2:
-    if st.button("🧠 Stress Journal & Breathing"):
-        st.session_state.active_section = "stress"
+    if st.button("🧠 NEURO LOUNGE", key="nav_neuro"): st.session_state.active_section = "stress"
 with nav_col3:
-    if st.button("🧘 Pain & Visual AI Recovery"):
-        st.session_state.active_section = "pain"
+    if st.button("🧘 AI RECOVERY", key="nav_recovery"): st.session_state.active_section = "pain"
 
-st.divider()
+st.markdown("<br>", unsafe_allow_html=True)
 
 calendar_options = {
-    "editable": False,
-    "selectable": True,
-    "headerToolbar": {
-        "left": "prev,next today",
-        "center": "title",
-        "right": "dayGridMonth"
-    },
-    "initialView": "dayGridMonth"
+    "editable": False, "selectable": True,
+    "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth"},
+    "initialView": "dayGridMonth",
+    "eventColor": PALETTE["accent_2"],
+    "contentHeight": "auto",
 }
 
 # ==========================================
-# SECTION 1: CHOREOGRAPHY + CALENDAR
+# SECTION 1: CHOREOGRAPHY VAULT
 # ==========================================
 if st.session_state.active_section == "choreo":
-    st.header("Choreography & Media Vault")
+    st.markdown("<h2>📹 Media Vault</h2>", unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
-    with col1:
-        default_idx = DANCE_STYLES.index(user_profile.get("dance_style", "Bharathanatyam")) if user_profile.get("dance_style") in DANCE_STYLES else 0
-        c_style = st.selectbox("Dance Style:", DANCE_STYLES, index=default_idx, key="c_style")
-        c_piece = st.text_input("Song / Piece Title:", placeholder="e.g., Tillana, Swan Lake", key="c_piece")
-        c_date = st.date_input("Practice Date:", datetime.now(), key="c_date")
-    with col2:
-        c_file = st.file_uploader("Upload Rehearsal Media (Saved Locally):", type=["mp4", "mov", "avi", "mp3"], key="c_file")
-    
-    if st.button("Save Choreography 💾", key="btn_choreo"):
-        if c_piece and c_file:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            ext = c_file.name.split(".")[-1]
-            filename = f"{timestamp}_{c_piece.replace(' ', '_')}.{ext}"
-            filepath = os.path.join(VAULT_DIR, filename)
-            
-            with open(filepath, "wb") as f:
-                f.write(c_file.getbuffer())
-                
-            db = load_db()
-            db.append({
-                "id": timestamp,
-                "timestamp": timestamp,
-                "type": "choreo",
-                "date": str(c_date),
-                "style": c_style,
-                "piece": c_piece.strip(),
-                "path": filepath,
-                "file_type": ext,
-                "user": st.session_state.user_email
-            })
-            save_db(db)
-            st.success(f"Successfully saved choreography for '{c_piece}'!")
-            st.rerun()
-        else:
-            st.error("Please provide a piece title and upload a media file.")
-            
-    st.divider()
-    st.subheader("📅 Rehearsal Calendar Grid")
-    st.caption("Click directly on any calendar event to view the video or delete the choreography entry.")
-    
-    db = load_db()
-    choreo_items = [x for x in db if x.get("type") == "choreo"]
-    
-    events = []
-    for item in choreo_items:
-        item_id = item.get("id", item.get("timestamp"))
-        events.append({
-            "id": item_id,
-            "title": f"📹 {item['piece']}",
-            "start": item["date"],
-            "end": item["date"],
-            "color": "#D893A4"
-        })
+    with st.expander("➕ Upload Rehearsal or Piece"):
+        c1, c2 = st.columns(2)
+        with c1:
+            c_piece = st.text_input("Title:", placeholder=" Tillana Rehearsal")
+            c_date = st.date_input("Date:", datetime.now())
+        with c2:
+            c_file = st.file_uploader("Choose Media:", type=["mp4", "mov", "mp3"])
         
-    cal_response = calendar(events=events, options=calendar_options, key="choreo_visual_calendar")
-    
-    selected_event_id = None
-    selected_date = None
-
-    if cal_response.get("eventClick"):
-        selected_event_id = cal_response["eventClick"]["event"]["id"]
-    elif cal_response.get("dateClick"):
-        selected_date = cal_response["dateClick"]["date"].split("T")[0]
-
-    st.divider()
-    st.subheader("📹 Rehearsal Viewer & Actions")
-
-    if selected_event_id:
-        target_items = [x for x in choreo_items if x.get("id", x.get("timestamp")) == selected_event_id]
-        if target_items:
-            item = target_items[0]
-            item_id = item.get("id", item.get("timestamp"))
-            st.markdown(f"### Selected Piece: **{item['piece']}** ({item['style']})")
-            st.write(f"**Recorded Date:** {item['date']}")
-            
-            if item['file_type'] in ['mp4', 'mov', 'avi']:
-                st.video(item['path'])
-            else:
-                st.audio(item['path'])
-                
-            if st.button(f"🗑️ Delete Choreography '{item['piece']}'", key=f"del_{item_id}"):
-                delete_entry(item_id)
-                st.success("Choreography entry successfully deleted.")
+        if st.button("SAVE TO VAULT 💾"):
+            if c_piece and c_file:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                ext = c_file.name.split(".")[-1]
+                filepath = os.path.join(VAULT_DIR, f"{timestamp}.{ext}")
+                with open(filepath, "wb") as f: f.write(c_file.getbuffer())
+                    
+                vault_db_items.append({
+                    "id": timestamp, "type": "choreo", "date": str(c_date),
+                    "piece": c_piece.strip(), "path": filepath, "file_type": ext,
+                    "user": st.session_state.user_email
+                })
+                save_json(vault_db_items, DB_FILE)
+                st.toast("Media vaulted successfully.", icon="📹")
                 st.rerun()
 
-    elif selected_date:
-        filtered = [x for x in choreo_items if x["date"] == selected_date]
-        if filtered:
-            for item in filtered:
-                item_id = item.get("id", item.get("timestamp"))
-                with st.expander(f"🎵 {item['piece']} - {item['style']} ({item['date']})"):
-                    if item['file_type'] in ['mp4', 'mov', 'avi']:
-                        st.video(item['path'])
-                    else:
-                        st.audio(item['path'])
-                    if st.button("Delete Entry 🗑️", key=f"del_date_{item_id}"):
-                        delete_entry(item_id)
-                        st.success("Entry deleted.")
-                        st.rerun()
-        else:
-            st.info("No choreography recorded on this date.")
-    else:
-        st.info("Click any event on the calendar above to view or delete.")
+    st.divider()
+    user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user") == st.session_state.user_email]
+    
+    events = [{"id": i["id"], "title": f"📹 {i['piece']}", "start": i["date"]} for i in user_choreo_items]
+    cal_response = calendar(events=events, options=calendar_options, key="choreo_cal")
+    
+    item_to_show = None
+    if cal_response.get("eventClick"):
+        eid = cal_response["eventClick"]["event"]["id"]
+        item_to_show = next((x for x in user_choreo_items if x["id"] == eid), None)
+    elif cal_response.get("dateClick"):
+        d = cal_response["dateClick"]["date"].split("T")[0]
+        item_to_show = next((x for x in user_choreo_items if x["date"] == d), None)
+
+    if item_to_show:
+        st.markdown(f"### Rehearsal: {item_to_show['piece']}")
+        if item_to_show['file_type'] in ['mp4', 'mov']: st.video(item_to_show['path'])
+        else: st.audio(item_to_show['path'])
+        
+        if st.button("🗑️ Delete Media"):
+            updated_db = delete_local_entry(item_to_show['id'], vault_db_items)
+            save_json(updated_db, DB_FILE)
+            st.rerun()
 
 # ==========================================
-# SECTION 2: STRESS JOURNAL + CALENDAR
+# SECTION 2: NEURO LOUNGE
 # ==========================================
 elif st.session_state.active_section == "stress":
-    st.header("Mental Stress Journal & Neuro-Breathing Lounge")
+    st.markdown("<h2>🧠 NeuroDance Lounge</h2>", unsafe_allow_html=True)
     
-    s_date = st.date_input("Log Date:", datetime.now(), key="s_date")
-    s_level = st.slider("Mental Strain / Anxiety Level (1-10):", 1, 10, 5, key="s_level")
-    s_notes = st.text_area("Mental State Reflection / Journal Entry:", placeholder="e.g., Felt pressured during complex footwork patterns...", key="s_notes")
-    
-    if st.button("Save Journal Entry 🧠", key="btn_stress"):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        db = load_db()
-        db.append({
-            "id": timestamp,
-            "timestamp": timestamp,
-            "type": "stress",
-            "date": str(s_date),
-            "stress_level": s_level,
-            "notes": s_notes,
-            "user": st.session_state.user_email
-        })
-        save_db(db)
-        st.success("Journal entry saved successfully!")
-        st.rerun()
+    with st.expander("📝 Log Neuro-Reflection"):
+        s1, s2 = st.columns([1,3])
+        with s1: s_level = st.slider("Mental Strain (1-10):", 1, 10, 5)
+        with s2: s_notes = st.text_area("Reflections:", placeholder="Nervous about Footwork complexities...")
         
+        if st.button("LOG TO VAULT 🧠"):
+            vault_db_items.append({
+                "id": str(datetime.now().timestamp()), "type": "stress", 
+                "date": str(datetime.now().date()), "stress_level": s_level, 
+                "notes": s_notes, "user": st.session_state.user_email
+            })
+            save_json(vault_db_items, DB_FILE)
+            st.toast("Reflection vaulted.", icon="🧠")
+
     st.divider()
     
-    st.subheader("🌬️ Optional Neuro-Breathing & Calm Audio Lounge")
-    breathing_html = """
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #D8BFCE; padding: 25px; border-radius: 15px; color: #4A3E3D; text-align: center;">
-        <h3 style="margin-bottom: 10px; color: #CE8127; font-family: Georgia, serif;">🧠 Synchronized Brain Breathing</h3>
-        <p style="font-size: 14px; color: #4A3E3D;">Inhale as the brain expands. Exhale as it contracts.</p>
-        
-        <div id="brain-circle" style="width: 140px; height: 140px; background: linear-gradient(135deg, #E5A38F, #D893A4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 0 25px rgba(229, 163, 143, 0.7); animation: breathe 8s infinite ease-in-out; margin: 20px 0;">
-            🧠
-        </div>
-        
-        <p id="breath-instruction" style="font-size: 16px; font-weight: bold; color: #CE8127; margin-top: 5px;">Get Ready...</p>
+    st.subheader("🌬️ Aesthetic Breathing Guide (4-4-4-4)")
+    st.write("Center yourself before practice. Focus only on the countdown and your breath.")
 
-        <div style="margin-top: 15px; width: 100%;">
-            <p style="font-size: 12px; color: #4A3E3D; margin-bottom: 5px;">Optional Calm Background Sound / Lo-Fi Audio:</p>
-            <audio controls loop style="width: 100%; border-radius: 8px;">
-                <source src="https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg" type="audio/ogg">
-                Your browser does not support the audio element.
-            </audio>
-        </div>
-    </div>
-
-    <style>
-    @keyframes breathe {
-        0% { transform: scale(1); background-color: #E5A38F; }
-        40% { transform: scale(1.35); background-color: #D893A4; }
-        50% { transform: scale(1.35); background-color: #D893A4; }
-        100% { transform: scale(1); background-color: #E5A38F; }
-    }
-    </style>
-
-    <script>
-    const instruction = document.getElementById("breath-instruction");
-    let phases = ["Inhale deeply (4s)...", "Hold breath (4s)...", "Exhale slowly (4s)...", "Rest (4s)..."];
-    let i = 0;
+    b_col1, b_col2 = st.columns([1, 2.5])
     
-    setInterval(() => {
-        instruction.innerText = phases[i];
-        i = (i + 1) % phases.length;
-    }, 4000);
-    </script>
-    """
-    st.components.v1.html(breathing_html, height=380)
-
-    st.divider()
-    st.subheader("📅 Journal Calendar Grid")
-    st.caption("Click directly on any journal event on the calendar to view or delete entries.")
-    
-    db = load_db()
-    stress_items = [x for x in db if x.get("type") == "stress"]
-    
-    stress_events = []
-    for item in stress_items:
-        item_id = item.get("id", item.get("timestamp"))
-        stress_events.append({
-            "id": item_id,
-            "title": f"🧠 Stress: {item['stress_level']}/10",
-            "start": item["date"],
-            "end": item["date"],
-            "color": "#CE8127"
-        })
-        
-    cal_response_stress = calendar(events=stress_events, options=calendar_options, key="stress_visual_calendar")
-    
-    selected_stress_id = None
-    selected_stress_date = None
-
-    if cal_response_stress.get("eventClick"):
-        selected_stress_id = cal_response_stress["eventClick"]["event"]["id"]
-    elif cal_response_stress.get("dateClick"):
-        selected_stress_date = cal_response_stress["dateClick"]["date"].split("T")[0]
-
-    st.divider()
-    st.subheader("🧠 Journal Review & Actions")
-
-    if selected_stress_id:
-        target_stress = [x for x in stress_items if x.get("id", x.get("timestamp")) == selected_stress_id]
-        if target_stress:
-            item = target_stress[0]
-            item_id = item.get("id", item.get("timestamp"))
-            st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
-            st.write(f"**Journal Entry:** {item['notes']}")
-            
-            if st.button("🗑️ Delete Journal Entry", key=f"del_st_{item_id}"):
-                delete_entry(item_id)
-                st.success("Journal entry deleted.")
+    with b_col1:
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        if not st.session_state.breathing_active:
+            if st.button("🚀 START SESSION", key="start_breathing"):
+                st.session_state.breathing_active = True
+                st.rerun()
+        else:
+            if st.button("⏹️ STOP", key="stop_breathing"):
+                st.session_state.breathing_active = False
                 st.rerun()
 
-    elif selected_stress_date:
-        filtered = [x for x in stress_items if x["date"] == selected_stress_date]
-        if filtered:
-            for item in filtered:
-                item_id = item.get("id", item.get("timestamp"))
-                st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
-                st.write(f"*Journal Notes:* {item['notes']}")
-                if st.button("Delete Entry 🗑️", key=f"del_st_date_{item_id}"):
-                    delete_entry(item_id)
-                    st.success("Entry deleted.")
-                    st.rerun()
-                st.divider()
+    with b_col2:
+        breathing_placeholder = st.empty()
+        
+        if st.session_state.breathing_active:
+            phases = [
+                ("Inhale Deeply", "🌬️", 4), 
+                ("Hold", "✋", 4), 
+                ("Exhale Slowly", "🧘", 4), 
+                ("Rest", "✨", 4)
+            ]
+            
+            with breathing_placeholder.container():
+                phase_colors = [PALETTE["accent_1"], PALETTE["accent_2"], PALETTE["accent_3"], PALETTE["accent_4"]]
+                st.markdown('<div class="breathing-container">', unsafe_allow_html=True)
+                icon_spot = st.empty()
+                text_spot = st.empty()
+                time_spot = st.empty()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            while st.session_state.breathing_active:
+                for idx, (p_text, p_icon, p_secs) in enumerate(phases):
+                    if not st.session_state.breathing_active: break
+                    color = phase_colors[idx]
+                    icon_spot.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 6rem; margin:0;'>{p_icon}</h1>", unsafe_allow_html=True)
+                    text_spot.markdown(f"<h2 style='text-align: center; color: {PALETTE['text']}; font-family: Playfair Display, serif; margin-top:1rem;'>{p_text}</h2>", unsafe_allow_html=True)
+                    
+                    for remaining in range(p_secs, 0, -1):
+                        time_spot.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 4rem; margin:0; font-family: Cinzel, serif;'>{remaining}</h1>", unsafe_allow_html=True)
+                        time.sleep(1)
+                    time.sleep(0.1)
         else:
-            st.info("No journal entries recorded on this date.")
-    else:
-        st.info("Click any journal event on the calendar above to view or delete.")
+            breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
 # ==========================================
-# SECTION 3: PAIN & VISUAL AI RECOVERY
+# SECTION 3: AI RECOVERY (INFOGRAPHICS)
 # ==========================================
 elif st.session_state.active_section == "pain":
-    st.header("Physical Pain & AI Visual Recovery Protocols")
-    st.write("Select a specific area of somatic tension to generate biomechanical explanations, video demonstrations, and step-by-step stretch routines.")
+    st.markdown("<h2>🧘 AI Visual Recovery</h2>", unsafe_allow_html=True)
+    st.write("Modular somatic recovery guides based on dance biomechanics.")
     
-    ai_recommendations = {
-        "Plantar Fascia / Arch": {
-            "mechanism": "High impact shock absorption stress common in classical foot-stamping (e.g., Tatte Adavu).",
-            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
-            "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
-            "steps": [
-                "**Step 1:** Sit comfortably on a chair or floor and place a lacrosse or massage ball directly beneath the arch of your barefoot.",
-                "**Step 2:** Roll the ball gently from the ball of your foot down to your heel, applying light to moderate downward pressure for 60 seconds per side.",
-                "**Step 3:** Stand facing a wall and perform eccentric calf drops off the edge of a step, slowly lowering your heels below step level over 4 seconds."
-            ]
+    # Raw GitHub URL pathways pointing directly to your uploaded repository images
+    RAW_BASE = "https://raw.githubusercontent.com/aditireddybollampally-ui/dance-neuro/main"
+    
+    ai_recovery_data = {
+        "Plantar Fascia (Foot)": {
+            "mechanism": "High impact stamping stress (classical dance).",
+            "infographic_url": f"{RAW_BASE}/4eb93dc5-a2c3-4676-929e-2d488976471f.jpeg",
+            "caption": "Modular guide for myofascial release of the arch."
         },
         "Achilles / Calf": {
-            "mechanism": "Repetitive rebound acceleration and plantarflexion overload from quick jumps and releve holdings.",
-            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
-            "image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80",
-            "steps": [
-                "**Step 1:** Stand facing a wall with hands placed flat against it at shoulder height.",
-                "**Step 2:** Step one leg back, keeping the back heel pinned flat on the floor and back knee bent slightly (targeting the soleus).",
-                "**Step 3:** Lean gently into the wall until a deep stretch is felt in the lower calf/Achilles tendon. Hold for 30–45 seconds per side."
-            ]
+            "mechanism": "Repetitive jumps/releve overload.",
+            "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra.png",
+            "caption": "Stretching protocols for lower leg tension."
         },
-        "Lumbar Spine (Lower Back)": {
-            "mechanism": "Compensatory extension strain during upright postural holding (Aramandi/plié alignment) or core fatigue.",
-            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
-            "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80",
-            "steps": [
-                "**Step 1:** Start on hands and knees on a soft yoga mat (tabletop position).",
-                "**Step 2:** Inhale deeply as you arch your back and tilt your head slightly upward (Cow Pose).",
-                "**Step 3:** Exhale as you round your spine toward the ceiling, pulling your belly button toward your back (Cat Pose). Repeat dynamically for 10 breathing cycles."
-            ]
+        "Lower Back": {
+            "mechanism": "Postural holding strain and core fatigue.",
+            "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(1).png",
+            "caption": "Spinal decompression and alignment guides."
         },
-        "Hip Flexors / Hamstrings": {
-            "mechanism": "Extreme range-of-motion holding under neuromuscular tension during splits and high extensions.",
-            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
-            "image": "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?auto=format&fit=crop&w=600&q=80",
-            "steps": [
-                "**Step 1:** Begin in a 90/90 seated position on the floor with front and back knees bent at 90-degree angles.",
-                "**Step 2:** Rotate your torso toward the front shin, keeping your spine tall, and hold for 30 seconds to open hip rotators.",
-                "**Step 3:** Shift into a low lunge with back knee resting on the mat, tucking pelvis slightly forward to lengthen hip flexors."
-            ]
+        "Hip Flexors": {
+            "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
+            "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(2).png",
+            "caption": "Hip mobility and flexor release routines."
         },
-        "Cervical Spine / Neck & Shoulders": {
-            "mechanism": "Sympathetic nervous system elevation translated into upper trapezius and levator scapulae strain.",
-            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
-            "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
-            "steps": [
-                "**Step 1:** Sit up tall on a stool or yoga block with shoulders relaxed away from your ears.",
-                "**Step 2:** Gently drop your right ear toward your right shoulder while extending your left arm downward at a 45-degree angle.",
-                "**Step 3:** Place your right hand gently on top of your head to apply light pressure (no pulling). Hold for 30 seconds per side."
-            ]
+        "Neck / Cervical Spine": {
+            "mechanism": "Nervous tension translating to upper trapezius strain.",
+            "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(3).png",
+            "caption": "Levator scapulae and cervical release techniques."
         }
     }
     
-    selected_pain = st.selectbox("Select Active Tension or Soreness Area:", list(ai_recommendations.keys()))
+    selected_pain = st.selectbox("Select Area of Tension:", list(ai_recovery_data.keys()))
     
-    if st.button("Generate Visual Recovery Protocol ⚙️", key="btn_pain"):
-        data = ai_recommendations[selected_pain]
-        st.markdown(f"### 🎯 Target System: {selected_pain}")
-        st.info(f"**Biomechanical Analysis:** {data['mechanism']}")
-        
+    if selected_pain:
+        data = ai_recovery_data[selected_pain]
         st.divider()
-        col_vid, col_img = st.columns(2)
+        st.markdown(f"<h3 style='color: {PALETTE['text']};'>🎯 Somatic Focus: {selected_pain}</h3>", unsafe_allow_html=True)
+        st.caption(f"Biomechanical Context: {data['mechanism']}")
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        with col_vid:
-            st.subheader("📹 Demonstration Clip")
-            st.video(data["video_url"])
-            st.caption("AI-assisted movement reference for form execution.")
-            
-        with col_img:
-            st.subheader("🖼️ Form Reference Frame")
-            st.image(data["image"], caption=f"Anatomical Focus Alignment for {selected_pain}", use_container_width=True)
-            
-        st.divider()
-        st.subheader("🧘 How To Do The Stretches (Step-by-Step Guide)")
-        for step in data["steps"]:
-            st.markdown(f"* {step}")
+        col1, col2, col3 = st.columns([0.2, 4, 0.2])
+        with col2:
+            st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>Recovery Guide Infographic</h4>", unsafe_allow_html=True)
+            st.image(data["infographic_url"], caption=data["caption"], use_container_width=True)
