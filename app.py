@@ -889,11 +889,9 @@ elif st.session_state.active_section == "pain":
         </div>
         """
 
-        # Set PyDeck map style strictly to Standard Light Mode
         r = pdk.Deck(
             layers=[circle_layer, text_layer],
             initial_view_state=view_state,
-            map_style="mapbox://styles/mapbox/light-v10",
             tooltip={"html": tooltip_html}
         )
 
@@ -946,7 +944,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
-    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. The map defaults to your extracted user location services and is rendered in light mode. Entering a 5-digit zipcode overrides the location and updates all 5 clinic street addresses, phone numbers, and profile details.
+    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. The map extracts user location services as default coordinates and is overriden if and only if a 5-digit zipcode is entered.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style (chosen from 50 styles), or reminder preferences.
