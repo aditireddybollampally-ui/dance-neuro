@@ -729,7 +729,7 @@ if st.session_state.active_section == "studio":
                     st.rerun()
 
         st.divider()
-        user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user") == st.session_state.user_email]
+        user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user"] == st.session_state.user_email] # type: ignore
         
         events = [{"id": i["id"], "title": f"📹 {i['piece']}", "start": i["date"]} for i in user_choreo_items]
         cal_response = calendar(events=events, options=calendar_options, key="choreo_cal")
@@ -911,7 +911,7 @@ elif st.session_state.active_section == "stress":
                 breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
 # ==========================================
-# SECTION 3: AI RECOVERY (ROBUST GEOLOCATION & CARTO DARK MAP)
+# SECTION 3: AI RECOVERY (ROBUST GEOLOCATION & RELIABLE MAP STYLE)
 # ==========================================
 elif st.session_state.active_section == "pain":
     st.markdown("<h2>🧘 AI Recovery</h2>", unsafe_allow_html=True)
@@ -1002,7 +1002,6 @@ elif st.session_state.active_section == "pain":
 
         input_zip = st.text_input("Enter Zipcode to Override User Location Services:", placeholder="e.g. 10003, 76201, 90210, or 60601")
         
-        # Determine Lat/Lon (Zipcode priority, then user location, then fallback)
         map_lat, map_lon = None, None
         city_name, state_name, curr_zip = "Detected Area", "US", "Local"
 
@@ -1118,11 +1117,11 @@ elif st.session_state.active_section == "pain":
         </div>
         """
 
-        # CARTO DARKMATTER MAP (NO MAPBOX TOKEN REQUIRED, RENDERS DARK BASEMAP INSTANTLY)
+        # USING RELIABLE NATIVE CARTO ROAD/DARK STYLE THAT RENDERS CITIES & LABELS INSTANTLY
         r = pdk.Deck(
             layers=[circle_layer, text_layer],
             initial_view_state=view_state,
-            map_style="carto-darkmatter",
+            map_style="road",
             tooltip={"html": tooltip_html}
         )
 
@@ -1174,7 +1173,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Guides & Advice**: Select any area of somatic tension to view stretching infographics alongside myofascial release advice and posture tips.
-    * **Maps**: View nearby dance clinics rendered seamlessly on a dark map based on user location services or entered zipcodes.
+    * **Maps**: View nearby dance clinics rendered seamlessly on a map displaying city details and labels based on user location services or entered zipcodes.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Customize your avatar, preferred name, core style, or reminder preferences.
