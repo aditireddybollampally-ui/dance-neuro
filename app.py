@@ -275,7 +275,7 @@ Best regards,
 DanceVault Team
 """
         else:
-            subject = f"DanceVault Notification"
+            subject = "DanceVault Notification"
             body = str(code_or_name)
 
         msg = MIMEMultipart()
@@ -522,4 +522,400 @@ with st.sidebar:
         st.session_state.auth_page = "login"
         st.rerun()
         
-    if st.button("🔴 PERMANENTLY DELETE ACCOUNT", key="btn
+    if st.button("🔴 PERMANENTLY DELETE ACCOUNT", key="btn_del_acc"):
+        delete_user_account_completely(st.session_state.user_email)
+        st.session_state.logged_in = False
+        st.session_state.user_email = ""
+        st.session_state.auth_page = "login"
+        st.rerun()
+
+# 4-COLUMN TOP NAVIGATION
+nav_col1, nav_col2, nav_col3, nav_col4 = st.columns(4)
+with nav_col1:
+    if st.button("🩰 DANCE STUDIO", key="nav_studio"): st.session_state.active_section = "studio"
+with nav_col2:
+    if st.button("🧠 NEURO LOUNGE", key="nav_neuro"): st.session_state.active_section = "stress"
+with nav_col3:
+    if st.button("🧘 AI RECOVERY", key="nav_recovery"): st.session_state.active_section = "pain"
+with nav_col4:
+    if st.button("📖 HOW TO USE", key="nav_how_to"): st.session_state.active_section = "how_to"
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+calendar_options = {
+    "editable": False, "selectable": True,
+    "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth"},
+    "initialView": "dayGridMonth",
+    "eventColor": PALETTE["accent_2"],
+    "contentHeight": "auto",
+}
+
+# ==========================================
+# SECTION 1: DANCE STUDIO (MEDIA VAULT)
+# ==========================================
+if st.session_state.active_section == "studio":
+    st.markdown("<h2>🩰 Dance Studio & Media Vault</h2>", unsafe_allow_html=True)
+    
+    with st.expander("➕ Upload Rehearsal or Piece"):
+        c1, c2 = st.columns(2)
+        with c1:
+            c_piece = st.text_input("Title:", placeholder=" Tillana Rehearsal")
+            c_date = st.date_input("Date:", datetime.now())
+        with c2:
+            c_file = st.file_uploader("Choose Media:", type=["mp4", "mov", "mp3"])
+        
+        if st.button("SAVE TO VAULT 💾"):
+            if c_piece and c_file:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                ext = c_file.name.split(".")[-1]
+                filepath = os.path.join(VAULT_DIR, f"{timestamp}.{ext}")
+                with open(filepath, "wb") as f: f.write(c_file.getbuffer())
+                    
+                vault_db_items.append({
+                    "id": timestamp, "type": "choreo", "date": str(c_date),
+                    "piece": c_piece.strip(), "path": filepath, "file_type": ext,
+                    "user": st.session_state.user_email
+                })
+                save_json(vault_db_items, DB_FILE)
+                st.toast("Media vaulted successfully.", icon="📹")
+                st.rerun()
+
+    st.divider()
+    user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user") == st.session_state.user_email]
+    
+    events = [{"id": i["id"], "title": f"📹 {i['piece']}", "start": i["date"]} for i in user_choreo_items]
+    cal_response = calendar(events=events, options=calendar_options, key="choreo_cal")
+    
+    item_to_show = None
+    if cal_response.get("eventClick"):
+        eid = cal_response["eventClick"]["event"]["id"]
+        item_to_show = next((x for x in user_choreo_items if x["id"] == eid), None)
+    elif cal_response.get("dateClick"):
+        d = cal_response["dateClick"]["date"].split("T")[0]
+        item_to_show = next((x for x in user_choreo_items if x["date"] == d), None)
+
+    if item_to_show:
+        st.markdown(f"### Rehearsal: {item_to_show['piece']}")
+        if item_to_show['file_type'] in ['mp4', 'mov']: st.video(item_to_show['path'])
+        else: st.audio(item_to_show['path'])
+        
+        if st.button("🗑️ Delete Media"):
+            updated_db = delete_local_entry(item_to_show['id'], vault_db_items)
+            save_json(updated_db, DB_FILE)
+            st.rerun()
+
+# ==========================================
+# SECTION 2: NEURO LOUNGE (WITH SUB-TABS)
+# ==========================================
+elif st.session_state.active_section == "stress":
+    st.markdown("<h2>🧠 Neuro Lounge</h2>", unsafe_allow_html=True)
+    
+    neuro_tab1, neuro_tab2 = st.tabs(["📝 Journal & Reminders", "🌬️ Breathing Guide"])
+    
+    with neuro_tab1:
+        with st.expander("➕ Log Neuro-Reflection"):
+            s1, s2 = st.columns([1,3])
+            with s1: s_level = st.slider("Mental Strain (1-10):", 1, 10, 5)
+            with s2: s_notes = st.text_area("Reflections:", placeholder="Nervous about Footwork complexities...")
+            
+            if st.button("LOG TO VAULT 🧠"):
+                vault_db_items.append({
+                    "id": str(datetime.now().timestamp()), "type": "stress", 
+                    "date": str(datetime.now().date()), "stress_level": s_level, 
+                    "notes": s_notes, "user": st.session_state.user_email
+                })
+                save_json(vault_db_items, DB_FILE)
+                st.toast("Reflection vaulted.", icon="🧠")
+
+        st.divider()
+
+        st.subheader("📩 Daily Email Reminders")
+        c_rem1, c_rem2 = st.columns([2, 1])
+        with c_rem1:
+            st.caption("Daily journal reminder emails are sent every evening at 8:00 PM.")
+        with c_rem2:
+            if st.button("SEND TEST REMINDER 📩", key="btn_test_reminder"):
+                with st.spinner("Sending test reminder..."):
+                    if send_real_email(st.session_state.user_email, "", purpose="journal_reminder"):
+                        st.success("Test reminder email sent to your inbox!")
+
+    with neuro_tab2:
+        st.subheader("🌬️ Breathing Guide (4-4-4-4)")
+        st.write("Center yourself before practice. Focus only on the countdown and your breath.")
+
+        b_col1, b_col2 = st.columns([1, 2.5])
+        
+        with b_col1:
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            if not st.session_state.breathing_active:
+                if st.button("🚀 START SESSION", key="start_breathing"):
+                    st.session_state.breathing_active = True
+                    st.rerun()
+            else:
+                if st.button("⏹️ STOP", key="stop_breathing"):
+                    st.session_state.breathing_active = False
+                    st.rerun()
+
+        with b_col2:
+            breathing_placeholder = st.empty()
+            
+            if st.session_state.breathing_active:
+                phases = [
+                    ("Inhale Deeply", "🌬️", 4), 
+                    ("Hold", "✋", 4), 
+                    ("Exhale Slowly", "🧘", 4), 
+                    ("Rest", "✨", 4)
+                ]
+                
+                with breathing_placeholder.container():
+                    phase_colors = [PALETTE["accent_1"], PALETTE["accent_2"], PALETTE["accent_3"], PALETTE["accent_4"]]
+                    st.markdown('<div class="breathing-container">', unsafe_allow_html=True)
+                    icon_spot = st.empty()
+                    text_spot = st.empty()
+                    time_spot = st.empty()
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                while st.session_state.breathing_active:
+                    for idx, (p_text, p_icon, p_secs) in enumerate(phases):
+                        if not st.session_state.breathing_active: break
+                        color = phase_colors[idx]
+                        icon_spot.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 6rem; margin:0;'>{p_icon}</h1>", unsafe_allow_html=True)
+                        text_spot.markdown(f"<h2 style='text-align: center; color: {PALETTE['text']}; font-family: Playfair Display, serif; margin-top:1rem;'>{p_text}</h2>", unsafe_allow_html=True)
+                        
+                        for remaining in range(p_secs, 0, -1):
+                            time_spot.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 4rem; margin:0; font-family: Cinzel, serif;'>{remaining}</h1>", unsafe_allow_html=True)
+                            time.sleep(1)
+                        time.sleep(0.1)
+            else:
+                breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
+
+# ==========================================
+# SECTION 3: AI RECOVERY (WITH SUB-TABS)
+# ==========================================
+elif st.session_state.active_section == "pain":
+    st.markdown("<h2>🧘 AI Recovery</h2>", unsafe_allow_html=True)
+    st.write("Modular somatic recovery guides and clinical specialist directories based on dance biomechanics.")
+
+    recovery_tab1, recovery_tab2 = st.tabs(["🧘 Recovery Stretches", "📍 Maps"])
+
+    with recovery_tab1:
+        RAW_BASE = "https://raw.githubusercontent.com/aditireddybollampally-ui/dance-neuro/main"
+        
+        ai_recovery_data = {
+            "Plantar Fascia (Foot)": {
+                "mechanism": "High impact stamping stress (classical dance).",
+                "infographic_url": f"{RAW_BASE}/4eb93dc5-a2c3-4676-929e-2d488976471f.jpeg",
+                "caption": "Modular guide for myofascial release of the arch."
+            },
+            "Achilles / Calf": {
+                "mechanism": "Repetitive jumps/releve overload.",
+                "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra.png",
+                "caption": "Stretching protocols for lower leg tension."
+            },
+            "Lower Back": {
+                "mechanism": "Postural holding strain and core fatigue.",
+                "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(1).png",
+                "caption": "Spinal decompression and alignment guides."
+            },
+            "Hip Flexors": {
+                "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
+                "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(2).png",
+                "caption": "Hip mobility and flexor release routines."
+            },
+            "Neck / Cervical Spine": {
+                "mechanism": "Nervous tension translating to upper trapezius strain.",
+                "infographic_url": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(3).png",
+                "caption": "Levator scapulae and cervical release techniques."
+            }
+        }
+        
+        selected_pain = st.selectbox("Select Area of Tension:", list(ai_recovery_data.keys()))
+        
+        if selected_pain:
+            data = ai_recovery_data[selected_pain]
+            st.divider()
+            st.markdown(f"<h3 style='color: {PALETTE['text']};'>🎯 Somatic Focus: {selected_pain}</h3>", unsafe_allow_html=True)
+            st.caption(f"Biomechanical Context: {data['mechanism']}")
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns([0.2, 4, 0.2])
+            with col2:
+                st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>Recovery Guide Infographic</h4>", unsafe_allow_html=True)
+                st.image(data["infographic_url"], caption=data["caption"], use_container_width=True)
+
+    with recovery_tab2:
+        st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
+        st.write("Default location is automatically detected. Enter a zipcode below if you wish to override the default location.")
+
+        # Default Location Detection (Fallback: NYC)
+        map_lat, map_lon = 40.7380, -73.9800
+        loc = get_geolocation()
+        if loc and "coords" in loc:
+            map_lat = loc["coords"]["latitude"]
+            map_lon = loc["coords"]["longitude"]
+
+        # Zipcode Search Input
+        input_zip = st.text_input("Enter Zipcode to Override Default Location:", placeholder="e.g. 10003, 76201, or 90210")
+        if input_zip and input_zip.strip():
+            z_lat, z_lon = geocode_zipcode(input_zip.strip())
+            if z_lat and z_lon:
+                map_lat, map_lon = z_lat, z_lon
+                st.success(f"Centered map and moved clinic markers to Zipcode {input_zip}")
+            else:
+                st.error("Zipcode not found. Showing default detected area.")
+        else:
+            st.info("📍 Currently displaying default detected location.")
+
+        # Clinic Marker Pin Data
+        clinic_data = [
+            {
+                "label": "1",
+                "name": "Harkness Center for Dance Injuries",
+                "doctor_type": "Dance Physician & Specialized Medical Staff",
+                "phone": "(212) 598-6000",
+                "address": f"Near Selected Location ({round(map_lat, 4)}, {round(map_lon, 4)})",
+                "lat": map_lat + 0.005, "lon": map_lon + 0.004,
+                "description": "Comprehensive orthopedic and dance-medicine diagnostic center."
+            },
+            {
+                "label": "2",
+                "name": "Somatic Dance Physical Therapy",
+                "doctor_type": "Physical Therapist",
+                "phone": "(212) 349-1100",
+                "address": f"Near Selected Location ({round(map_lat, 4)}, {round(map_lon, 4)})",
+                "lat": map_lat - 0.006, "lon": map_lon - 0.005,
+                "description": "Specialized manual therapy, rehab, and pointe readiness assessments."
+            },
+            {
+                "label": "3",
+                "name": "Regional Sports & Performing Arts Medicine",
+                "doctor_type": "Sports Medicine Doctor",
+                "phone": "(212) 263-6000",
+                "address": f"Near Selected Location ({round(map_lat, 4)}, {round(map_lon, 4)})",
+                "lat": map_lat + 0.008, "lon": map_lon - 0.007,
+                "description": "Non-surgical joint, tendon alignment, and biomechanical analysis."
+            },
+            {
+                "label": "4",
+                "name": "Somatic Athletic Training Lab",
+                "doctor_type": "Certified Athletic Trainer",
+                "phone": "(212) 807-7000",
+                "address": f"Near Selected Location ({round(map_lat, 4)}, {round(map_lon, 4)})",
+                "lat": map_lat - 0.004, "lon": map_lon + 0.008,
+                "description": "On-site performance taping, neuromuscular re-education, and recovery."
+            },
+            {
+                "label": "5",
+                "name": "Center for Performing Arts Orthopedics",
+                "doctor_type": "Orthopedic Specialist",
+                "phone": "(212) 774-2000",
+                "address": f"Near Selected Location ({round(map_lat, 4)}, {round(map_lon, 4)})",
+                "lat": map_lat + 0.002, "lon": map_lon - 0.003,
+                "description": "Foot, ankle, knee, and spine surgical and non-surgical specialists."
+            }
+        ]
+
+        df_clinics = pd.DataFrame(clinic_data)
+
+        # PyDeck Scatterplot Layer (Red Circle Pin Background)
+        circle_layer = pdk.Layer(
+            "ScatterplotLayer",
+            df_clinics,
+            get_position=["lon", "lat"],
+            get_color=[220, 50, 50, 240],
+            get_radius=250,
+            pickable=True,
+            auto_highlight=True
+        )
+
+        # PyDeck Text Layer (White Number Label)
+        text_layer = pdk.Layer(
+            "TextLayer",
+            df_clinics,
+            get_position=["lon", "lat"],
+            get_text="label",
+            get_size=18,
+            get_color=[255, 255, 255, 255],
+            get_angle=0,
+            get_text_anchor="'middle'",
+            get_alignment_baseline="'center'"
+        )
+
+        view_state = pdk.ViewState(
+            latitude=map_lat,
+            longitude=map_lon,
+            zoom=12.5,
+            pitch=0
+        )
+
+        tooltip_html = """
+        <div style="background-color: white; color: #4A3E3D; padding: 12px; border-radius: 10px; font-family: sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.15); max-width: 280px;">
+            <h4 style="margin:0 0 5px 0; color:#D893A4;">📍 Pin #{label}: {name}</h4>
+            <p style="margin:3px 0; font-size:12px;"><b>Role:</b> {doctor_type}</p>
+            <p style="margin:3px 0; font-size:12px;"><b>Address:</b> {address}</p>
+            <p style="margin:3px 0; font-size:12px;"><b>Phone:</b> {phone}</p>
+            <p style="margin:3px 0; font-size:11px; color:#7A6A68;">{description}</p>
+        </div>
+        """
+
+        r = pdk.Deck(
+            layers=[circle_layer, text_layer],
+            initial_view_state=view_state,
+            tooltip={"html": tooltip_html}
+        )
+
+        st.pydeck_chart(r)
+
+        # Numbered Clinic Option Buttons matching Map Pins
+        st.markdown("#### 🏥 Select Map Pin Number Below to View Full Clinic Profile:")
+        c_cols = st.columns(len(clinic_data))
+        for idx, clinic in enumerate(clinic_data):
+            with c_cols[idx]:
+                if st.button(f"📍 Pin #{clinic['label']}", key=f"btn_clinic_{idx}"):
+                    st.session_state.selected_clinic = clinic
+
+        if st.session_state.selected_clinic:
+            sel = st.session_state.selected_clinic
+            st.markdown(f"""
+            <div class="clinic-card">
+                <h3>📍 Pin #{sel.get('label', '1')} — {sel.get('name', 'Clinic')}</h3>
+                <p><b>Role / Specialty:</b> {sel.get('doctor_type', 'Specialist')}</p>
+                <p><b>Address:</b> {sel.get('address', 'N/A')}</p>
+                <p><b>Phone:</b> {sel.get('phone', 'N/A')}</p>
+                <p><b>Services & Focus:</b> {sel.get('description', 'N/A')}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+# ==========================================
+# SECTION 4: HOW TO USE GUIDE
+# ==========================================
+elif st.session_state.active_section == "how_to":
+    st.markdown("<h2>📖 How to Use DanceVault</h2>", unsafe_allow_html=True)
+    st.write("Welcome to your complete user guide for navigating all sections of **DanceVault**.")
+
+    st.markdown("""
+    ### 📩 Support Contact
+    If you encounter any issues or have questions, reach out directly at:
+    * **Support Email**: `dancevaultneuroapp@gmail.com`
+    """)
+
+    st.divider()
+
+    st.markdown("""
+    ### 🩰 1. Dance Studio Guide
+    * **Purpose**: Your central media library to upload, store, and review rehearsal videos and audio files.
+    * **Uploading Rehearsals**: Expand the **"Upload Rehearsal or Piece"** section, enter your choreography title, pick your rehearsal date, upload an `.mp4`, `.mov`, or `.mp3` file, and click **SAVE TO VAULT**.
+    * **Calendar Integration**: Use the interactive calendar to click on any date or rehearsal event block to instantly play or delete your media files.
+
+    ### 🧠 2. Neuro Lounge Guide
+    * **Journal & Reminders**: Under the **Journal & Reminders** sub-tab, log your mental strain rating (1-10) and write reflections. You can also toggle daily automated email reminders (sent at 8:00 PM) or click **SEND TEST REMINDER** to verify your SMTP setup.
+    * **Breathing Guide**: Switch to the **Breathing Guide** sub-tab and click **START SESSION** to practice the 4-4-4-4 box breathing cycle (Inhale, Hold, Exhale, Rest) before or after practice.
+
+    ### 🧘 3. AI Recovery Guide
+    * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
+    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. The map defaults to your automatically detected browser location. Entering a 5-digit zipcode instantly overrides the location and moves all 5 clinic markers to that zipcode.
+
+    ### 👤 Account Management & Security
+    * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style (chosen from 50 styles), or reminder preferences.
+    * **Account Deletion**: Use the **PERMANENTLY DELETE ACCOUNT** button in the sidebar to wipe all your profile records, reflection logs, and physical media files from local storage instantly.
+    """)
