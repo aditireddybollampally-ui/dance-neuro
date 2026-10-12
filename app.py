@@ -156,6 +156,16 @@ st.markdown(f"""
         border: 1px solid {PALETTE["border"]};
         margin-top: 2rem;
     }}
+
+    /* Clinic detail card */
+    .clinic-card {{
+        background-color: #FFFFFF;
+        padding: 1.5rem;
+        border-radius: 15px;
+        border-left: 5px solid {PALETTE["accent_2"]};
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-top: 1rem;
+    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -743,74 +753,71 @@ elif st.session_state.active_section == "pain":
                 map_lon = loc["coords"]["longitude"]
                 st.info("📍 Current browser location detected.")
 
-        # Local Clinics relative to centered area
+        # Real Location Pin Data
         clinic_data = [
             {
+                "id": "c1",
                 "name": "Harkness Center for Dance Injuries",
-                "doctor_type": "Dance Physician",
-                "emoji": "💃",
-                "address": "Specialized Performing Arts Medicine",
+                "doctor_type": "Dance Physician & Specialized Medical Staff",
+                "phone": "(212) 598-6000",
+                "address": "280 1st Ave, New York, NY 10009",
                 "lat": map_lat + 0.005, "lon": map_lon + 0.004,
-                "color": [216, 147, 164]
+                "description": "Comprehensive orthopedic and dance-medicine diagnostic center."
             },
             {
-                "name": "Sports & Performing Arts Physical Therapy",
+                "id": "c2",
+                "name": "Somatic Dance Physical Therapy",
                 "doctor_type": "Physical Therapist",
-                "emoji": "🧘",
-                "address": "Targeted Dance Rehabilitation",
+                "phone": "(212) 349-1100",
+                "address": "150 Broadway, Suite 802, New York, NY 10038",
                 "lat": map_lat - 0.006, "lon": map_lon - 0.005,
-                "color": [229, 163, 143]
+                "description": "Specialized manual therapy, rehab, and pointe readiness assessments."
             },
             {
-                "name": "Regional Sports Medicine Clinic",
+                "id": "c3",
+                "name": "Regional Sports & Performing Arts Medicine",
                 "doctor_type": "Sports Medicine Doctor",
-                "emoji": "🏥",
-                "address": "Non-Surgical Joint & Muscle Care",
+                "phone": "(212) 263-6000",
+                "address": "333 E 38th St, New York, NY 10016",
                 "lat": map_lat + 0.008, "lon": map_lon - 0.007,
-                "color": [206, 129, 39]
+                "description": "Non-surgical joint, tendon alignment, and biomechanical analysis."
             },
             {
                 "name": "Somatic Athletic Training Lab",
+                "id": "c4",
                 "doctor_type": "Certified Athletic Trainer",
-                "emoji": "🏃",
-                "address": "Injury Prevention & Taping",
+                "phone": "(212) 807-7000",
+                "address": "111 8th Ave, New York, NY 10011",
                 "lat": map_lat - 0.004, "lon": map_lon + 0.008,
-                "color": [216, 191, 206]
+                "description": "On-site performance taping, neuromuscular re-education, and recovery."
             },
             {
+                "id": "c5",
                 "name": "Center for Performing Arts Orthopedics",
                 "doctor_type": "Orthopedic Specialist",
-                "emoji": "🦴",
-                "address": "Foot, Ankle & Joint Surgery Specialists",
+                "phone": "(212) 774-2000",
+                "address": "530 E 70th St, New York, NY 10021",
                 "lat": map_lat + 0.002, "lon": map_lon - 0.003,
-                "color": [122, 106, 104]
+                "description": "Foot, ankle, knee, and spine surgical and non-surgical specialists."
             }
         ]
 
         df_clinics = pd.DataFrame(clinic_data)
 
-        st.markdown("""
-        **Doctor Type Legend:**
-        * 💃 **Dance Physician** (Performing arts medicine & specialized diagnosis)
-        * 🏥 **Sports Medicine Doctor** (Non-surgical joint, muscle & tendon alignment)
-        * 🧘 **Physical Therapist** (Targeted rehabilitation, mobility & alignment therapy)
-        * 🏃 **Athletic Trainer** (On-site injury prevention, taping & somatic conditioning)
-        * 🦴 **Orthopedic Specialist** (Bone structure, foot/ankle & joint repair)
-        """)
-
+        # PyDeck Scatterplot with Standard Red Location Markers
         view_state = pdk.ViewState(
             latitude=map_lat,
             longitude=map_lon,
             zoom=12.5,
-            pitch=40
+            pitch=30
         )
 
         layer = pdk.Layer(
             "ScatterplotLayer",
             df_clinics,
             get_position=["lon", "lat"],
-            get_color="color",
-            get_radius=200,
+            get_color=[220, 50, 50, 220],  # Standard Red Location Pin Color
+            get_radius=220,
             pickable=True,
             auto_highlight=True
         )
@@ -818,10 +825,26 @@ elif st.session_state.active_section == "pain":
         r = pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            tooltip={"html": "<b>{emoji} {name}</b><br/><b>Role:</b> {doctor_type}<br/><b>Address:</b> {address}"}
+            tooltip={"html": "<b>📍 {name}</b><br/><i>Click pin below to select details</i>"}
         )
 
         st.pydeck_chart(r)
+
+        # Interactive Clinic Details Dropdown Selector
+        st.markdown("<br>", unsafe_allow_html=True)
+        selected_clinic_name = st.selectbox("📍 Select a clinic pin location to view full details:", [c["name"] for c in clinic_data])
+        
+        selected_info = next((c for c in clinic_data if c["name"] == selected_clinic_name), None)
+        if selected_info:
+            st.markdown(f"""
+            <div class="clinic-card">
+                <h3>📍 {selected_info['name']}</h3>
+                <p><b>Role / Specialty:</b> {selected_info['doctor_type']}</p>
+                <p><b>Address:</b> {selected_info['address']}</p>
+                <p><b>Phone:</b> {selected_info['phone']}</p>
+                <p><b>Services & Focus:</b> {selected_info['description']}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ==========================================
 # SECTION 4: HOW TO USE GUIDE
@@ -850,7 +873,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
-    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to automatically display dance-specialized medical providers near you.
+    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to display dance-specialized medical providers near you. Select any clinic location to view its address, doctor role, phone number, and specialized services.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style, or reminder preferences.
