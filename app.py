@@ -341,7 +341,7 @@ user_profile = users_db.get(st.session_state.user_email, {})
 vault_db_items = load_json(DB_FILE, [])
 
 st.markdown('<h1 class="main-title">DanceVault</h1>', unsafe_allow_html=True)
-st.markdown(f"<div class='script-subtitle'>Aesthetic NeuroDance Hub for {user_profile.get('avatar', '🩰')} {user_profile.get('preferred_name', 'Dancer')}</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='script-subtitle'>DanceVault Hub for {user_profile.get('avatar', '🩰')} {user_profile.get('preferred_name', 'Dancer')}</div>", unsafe_allow_html=True)
 
 with st.sidebar:
     st.markdown(f"<h2>{user_profile.get('avatar', '🩰')} Vault Access</h2>", unsafe_allow_html=True)
