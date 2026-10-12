@@ -402,10 +402,8 @@ def generate_1000_quotes():
 MOTIVATIONAL_QUOTES = generate_1000_quotes()
 
 # ==========================================
-# MOVES DATA GENERATOR FOR ALL 50 STYLES (10 MOVES EACH)
+# MOVES DATA GENERATOR FOR ALL 50 STYLES (10 MOVES EACH - TEXT ONLY)
 # ==========================================
-IMG_STOCK = "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=600&q=80"
-
 MOVES_RAW = {
     "Afrobeat": ["Shaku Shaku", "Zanku", "Network", "Gwara Gwara", "Kpakujemu", "Skelewu", "Azonto", "Leg Work", "Kupe", "Pilolo"],
     "Acro Dance": ["Cartwheel", "Walkover (Front/Back)", "Elbow Stand", "Chest Stand", "Arabesque Roll", "Handstand Bridge", "Valdez", "Side Leap with Passé", "Acro Turn", "Aerial"],
@@ -469,8 +467,7 @@ def build_all_dance_moves_database():
             style_moves.append({
                 "name": f"{idx}. {m_name}",
                 "description": f"A core movement in {style} focusing on rhythm, body control, and stylistic posture.",
-                "how_to": f"1. Begin in balanced stance.\n2. Initiate {m_name} on count 1.\n3. Coordinate arms and core alignment.\n4. Execute smoothly through count 8.",
-                "image": IMG_STOCK
+                "how_to": f"1. Begin in balanced stance.\n2. Initiate {m_name} on count 1.\n3. Coordinate arms and core alignment.\n4. Execute smoothly through count 8."
             })
         db[style] = style_moves
     return db
@@ -699,7 +696,7 @@ calendar_options = {
 }
 
 # ==========================================
-# SECTION 1: DANCE STUDIO (10 MOVES FOR ALL 50 STYLES)
+# SECTION 1: DANCE STUDIO (TEXT-ONLY MOVES LIBRARY)
 # ==========================================
 if st.session_state.active_section == "studio":
     st.markdown("<h2>🩰 Dance Studio & Media Vault</h2>", unsafe_allow_html=True)
@@ -757,7 +754,7 @@ if st.session_state.active_section == "studio":
 
     with studio_tab2:
         st.markdown("<h3>💃 Complete Dance Moves Library (All 50 Styles)</h3>", unsafe_allow_html=True)
-        st.write("Select any of the 50 dance styles below to view 10 foundational dance moves, descriptions, instructions, and images.")
+        st.write("Select any of the 50 dance styles below to view 10 foundational dance moves, descriptions, and step-by-step instructions.")
 
         selected_move_style = st.selectbox("Select Dance Style:", DANCE_STYLES)
 
@@ -773,7 +770,6 @@ if st.session_state.active_section == "studio":
                     if m_idx < len(moves):
                         move = moves[m_idx]
                         with cols[col_idx]:
-                            st.image(move["image"], caption=move["name"], use_container_width=True)
                             st.markdown(f"""
                             <div class="move-card">
                                 <h4 style="margin:0; color:{PALETTE['accent_1']};">{move['name']}</h4>
@@ -1165,7 +1161,7 @@ elif st.session_state.active_section == "how_to":
     st.markdown("""
     ### 🩰 1. Dance Studio Guide
     * **Media Rehearsals**: Upload, store, and review rehearsal videos and audio files on the calendar.
-    * **Moves Library**: Select any of the 50 dance styles from the dropdown menu to explore 10 foundational dance moves complete with descriptions, step-by-step instructions ("How To Do It"), and reference photos.
+    * **Moves Library**: Select any of the 50 dance styles from the dropdown menu to explore 10 foundational dance moves complete with descriptions and step-by-step instructions ("How To Do It").
 
     ### 🧠 2. Neuro Lounge Guide
     * **Journal & Reminders**: Log daily mental strain ratings (1-10) and reflections, or test automated email reminders.
