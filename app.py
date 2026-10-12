@@ -156,6 +156,16 @@ st.markdown(f"""
         border: 1px solid {PALETTE["border"]};
         margin-top: 2rem;
     }}
+
+    /* Clinic detail card */
+    .clinic-card {{
+        background-color: #FFFFFF;
+        padding: 1.5rem;
+        border-radius: 15px;
+        border-left: 5px solid {PALETTE["accent_2"]};
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-top: 1.5rem;
+    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -304,6 +314,24 @@ if "scheduler_started" not in st.session_state:
     threading.Thread(target=run_scheduler, daemon=True).start()
 
 # ==========================================
+# TOP 50 DANCE STYLES LIST
+# ==========================================
+DANCE_STYLES = [
+    "Afrobeat", "Acro Dance", "Bachata", "Ballet", "Ballroom", 
+    "Belly Dance", "Bharatanatyam", "Bhangra", "Breakdancing (B-Boying)", "Capoeira", 
+    "Cha-Cha", "Clogging", "Contemporary", "Dancehall", "Flamenco", 
+    "Folk Dance", "Fox Trot", "Garba", "Giddha", "Hip Hop", 
+    "House Dance", "Irish Stepdance", "Jazz", "Jazz Funk", "Kathak", 
+    "Kathakali", "Kizomba", "K-Pop", "Krumping", "Latin Dance", 
+    "Locking", "Lindy Hop", "Merengue", "Modern", "Mohiniyattam", 
+    "Odissi", "Popping", "Polka", "Reggaeton", "Rumba", 
+    "Salsa", "Samba", "Swing", "Tango", "Tap", 
+    "Tribal Fusion", "Tutting", "Vogue / Voguing", "Waltz", "Waacking", "Other"
+]
+
+AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
+
+# ==========================================
 # INITIALIZE SESSION STATE
 # ==========================================
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
@@ -313,9 +341,7 @@ if "verification_code" not in st.session_state: st.session_state.verification_co
 if "pending_user" not in st.session_state: st.session_state.pending_user = {}
 if "active_section" not in st.session_state: st.session_state.active_section = "studio"
 if 'breathing_active' not in st.session_state: st.session_state.breathing_active = False
-
-DANCE_STYLES = ["Bharathanatyam", "Ballet", "Contemporary", "Hip Hop", "Kathak", "Jazz", "Tap", "Other"]
-AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
+if 'selected_clinic' not in st.session_state: st.session_state.selected_clinic = None
 
 # ==========================================
 # GATEWAY (Sign In / Sign Up)
@@ -368,7 +394,7 @@ if not st.session_state.logged_in:
             new_email = st.text_input("Email", placeholder="your.email@dance.com", key="su_email")
             new_pass = st.text_input("Set Key", type="password", placeholder="Choose wisely", key="su_pass")
             pref_name = st.text_input("Preferred Name", placeholder="e.g., Mia Rao", key="su_prefname")
-            primary_style = st.selectbox("Core Style:", DANCE_STYLES, key="su_style")
+            primary_style = st.selectbox("Core Dance Style:", DANCE_STYLES, key="su_style")
             want_reminders = st.checkbox("Receive daily email reminders to log my journal", value=True, key="su_reminders")
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -474,7 +500,7 @@ with st.sidebar:
     with st.expander("👤 Customize Profile"):
         new_avatar = st.selectbox("Avatar:", AVATAR_OPTIONS, index=AVATAR_OPTIONS.index(user_profile.get("avatar", "🩰")) if user_profile.get("avatar") in AVATAR_OPTIONS else 0)
         new_pref_name = st.text_input("Preferred Name:", value=user_profile.get("preferred_name", ""))
-        new_style = st.selectbox("Primary Style:", DANCE_STYLES, index=DANCE_STYLES.index(user_profile.get("dance_style", "Other")) if user_profile.get("dance_style") in DANCE_STYLES else 0)
+        new_style = st.selectbox("Primary Dance Style:", DANCE_STYLES, index=DANCE_STYLES.index(user_profile.get("dance_style", "Other")) if user_profile.get("dance_style") in DANCE_STYLES else DANCE_STYLES.index("Other"))
         new_reminders = st.checkbox("Receive daily email reminders to log journal", value=user_profile.get("email_reminders", True))
         
         if st.button("SAVE PROFILE CHANGES"):
@@ -719,7 +745,7 @@ elif st.session_state.active_section == "pain":
 
     with recovery_tab2:
         st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
-        st.write("Click on any location pin on the map to view full clinic details directly.")
+        st.write("Click on any location pin on the map or select a clinic below to view its full details.")
 
         # Default Center: NYC
         map_lat, map_lon = 40.7380, -73.9800
@@ -789,7 +815,7 @@ elif st.session_state.active_section == "pain":
 
         df_clinics = pd.DataFrame(clinic_data)
 
-        # PyDeck Scatterplot with Standard Red Location Markers
+        # PyDeck Scatterplot Layer
         view_state = pdk.ViewState(
             latitude=map_lat,
             longitude=map_lon,
@@ -801,13 +827,12 @@ elif st.session_state.active_section == "pain":
             "ScatterplotLayer",
             df_clinics,
             get_position=["lon", "lat"],
-            get_color=[220, 50, 50, 230],  # Standard Red Location Pin Color
+            get_color=[220, 50, 50, 230],
             get_radius=220,
             pickable=True,
             auto_highlight=True
         )
 
-        # Rich interactive tooltip popup directly on pin click/hover
         tooltip_html = """
         <div style="background-color: white; color: #4A3E3D; padding: 12px; border-radius: 10px; font-family: sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.15); max-width: 280px;">
             <h4 style="margin:0 0 5px 0; color:#D893A4;">📍 {name}</h4>
@@ -825,6 +850,26 @@ elif st.session_state.active_section == "pain":
         )
 
         st.pydeck_chart(r)
+
+        # Interactive Clinic Click Cards
+        st.markdown("#### 🏥 Select Location Pin Below to View Complete Profile:")
+        c_cols = st.columns(len(clinic_data))
+        for idx, clinic in enumerate(clinic_data):
+            with c_cols[idx]:
+                if st.button(f"📍 Location {idx+1}", key=f"btn_clinic_{idx}"):
+                    st.session_state.selected_clinic = clinic
+
+        if st.session_state.selected_clinic:
+            sel = st.session_state.selected_clinic
+            st.markdown(f"""
+            <div class="clinic-card">
+                <h3>📍 {sel['name']}</h3>
+                <p><b>Role / Specialty:</b> {sel['doctor_type']}</p>
+                <p><b>Address:</b> {sel['address']}</p>
+                <p><b>Phone:</b> {sel['phone']}</p>
+                <p><b>Services & Focus:</b> {sel['description']}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ==========================================
 # SECTION 4: HOW TO USE GUIDE
@@ -853,9 +898,9 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
-    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to display dance-specialized medical providers near you. Click directly on any red map marker pin to display the clinic's address, doctor role, phone number, and specialized services.
+    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to display dance-specialized medical providers near you. Click on any location pin or button below the map to display the clinic's address, doctor role, phone number, and specialized services.
 
     ### 👤 Account Management & Security
-    * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style, or reminder preferences.
+    * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style (chosen from 50 styles), or reminder preferences.
     * **Account Deletion**: Use the **PERMANENTLY DELETE ACCOUNT** button in the sidebar to wipe all your profile records, reflection logs, and physical media files from local storage instantly.
     """)
