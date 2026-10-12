@@ -341,7 +341,10 @@ user_profile = users_db.get(st.session_state.user_email, {})
 vault_db_items = load_json(DB_FILE, [])
 
 st.markdown('<h1 class="main-title">DanceVault</h1>', unsafe_allow_html=True)
-st.markdown(f"<div class='script-subtitle'>DanceVault Hub for {user_profile.get('avatar', '🩰')} {user_profile.get('preferred_name', 'Dancer')}</div>", unsafe_allow_html=True)
+st.markdown(
+    f"<div class='script-subtitle'>Dancehub for {user_profile.get('preferred_name', 'Dancer')} {user_profile.get('avatar', '🩰')}</div>", 
+    unsafe_allow_html=True
+)
 
 with st.sidebar:
     st.markdown(f"<h2>{user_profile.get('avatar', '🩰')} Vault Access</h2>", unsafe_allow_html=True)
@@ -567,4 +570,4 @@ elif st.session_state.active_section == "pain":
         col1, col2, col3 = st.columns([0.2, 4, 0.2])
         with col2:
             st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>Recovery Guide Infographic</h4>", unsafe_allow_html=True)
-            st.image(data["infographic_url"], caption=data["caption"], use_column_width=True)
+            st.image(data["infographic_url"], caption=data["caption"], use_container_width=True)
