@@ -911,7 +911,7 @@ elif st.session_state.active_section == "stress":
                 breathing_placeholder.info("Click 'Start Session' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
 # ==========================================
-# SECTION 3: AI RECOVERY (MAP IN DARK MODE)
+# SECTION 3: AI RECOVERY (ROBUST GEOLOCATION & CARTO DARK MAP)
 # ==========================================
 elif st.session_state.active_section == "pain":
     st.markdown("<h2>🧘 AI Recovery</h2>", unsafe_allow_html=True)
@@ -998,20 +998,14 @@ elif st.session_state.active_section == "pain":
 
     with recovery_tab2:
         st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
-        st.write("The map defaults to your extracted user location services and is overriden if and only if a zipcode is entered below.")
-
-        user_loc = get_geolocation()
-        if user_loc and "coords" in user_loc:
-            map_lat = user_loc["coords"]["latitude"]
-            map_lon = user_loc["coords"]["longitude"]
-            city_name, state_name, curr_zip = reverse_geocode_coordinates(map_lat, map_lon)
-            location_source_msg = f"📍 Extracted User Location Services ({city_name}, {state_name})"
-        else:
-            map_lat, map_lon = 40.7380, -73.9800
-            city_name, state_name, curr_zip = "New York", "NY", "10003"
-            location_source_msg = "📍 Default Location (New York, NY)"
+        st.write("The map automatically detects your live location services. You can override it by typing a zipcode below.")
 
         input_zip = st.text_input("Enter Zipcode to Override User Location Services:", placeholder="e.g. 10003, 76201, 90210, or 60601")
+        
+        # Determine Lat/Lon (Zipcode priority, then user location, then fallback)
+        map_lat, map_lon = None, None
+        city_name, state_name, curr_zip = "Detected Area", "US", "Local"
+
         if input_zip and input_zip.strip():
             z_lat, z_lon, z_city, z_state = geocode_zipcode_details(input_zip.strip())
             if z_lat and z_lon:
@@ -1019,12 +1013,21 @@ elif st.session_state.active_section == "pain":
                 city_name = z_city
                 state_name = z_state
                 curr_zip = input_zip.strip()
-                st.success(f"Overrode user location! Updated clinics and map markers to Zipcode {curr_zip} ({city_name}, {state_name})")
+                st.success(f"Overrode user location! Map centered on Zipcode {curr_zip} ({city_name}, {state_name})")
             else:
-                st.error("Zipcode not found. Retaining extracted user location services.")
-                st.info(location_source_msg)
-        else:
-            st.info(location_source_msg)
+                st.error("Zipcode not found. Retaining location services.")
+
+        if map_lat is None or map_lon is None:
+            user_loc = get_geolocation()
+            if isinstance(user_loc, dict) and "coords" in user_loc and user_loc["coords"]:
+                map_lat = user_loc["coords"]["latitude"]
+                map_lon = user_loc["coords"]["longitude"]
+                city_name, state_name, curr_zip = reverse_geocode_coordinates(map_lat, map_lon)
+                st.info(f"📍 Centered on Extracted User Location ({city_name}, {state_name})")
+            else:
+                map_lat, map_lon = 40.7380, -73.9800
+                city_name, state_name, curr_zip = "New York", "NY", "10003"
+                st.info("📍 Location services unavailable. Showing default view.")
 
         clinic_data = [
             {
@@ -1115,11 +1118,11 @@ elif st.session_state.active_section == "pain":
         </div>
         """
 
-        # MAP REVERTED TO DARK MODE
+        # CARTO DARKMATTER MAP (NO MAPBOX TOKEN REQUIRED, RENDERS DARK BASEMAP INSTANTLY)
         r = pdk.Deck(
             layers=[circle_layer, text_layer],
             initial_view_state=view_state,
-            map_style="mapbox://styles/mapbox/dark-v10",
+            map_style="carto-darkmatter",
             tooltip={"html": tooltip_html}
         )
 
@@ -1171,7 +1174,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Guides & Advice**: Select any area of somatic tension to view stretching infographics alongside myofascial release advice and posture tips.
-    * **Maps**: View nearby dance clinics in dark mode based on user location services or entered zipcodes.
+    * **Maps**: View nearby dance clinics rendered seamlessly on a dark map based on user location services or entered zipcodes.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Customize your avatar, preferred name, core style, or reminder preferences.
