@@ -40,7 +40,7 @@ st.markdown(f"""
         background-color: {PALETTE["bg"]};
         color: {PALETTE["text"]};
         font-family: 'Playfair Display', serif;
-    }
+    }}
 
     /* Elegant Titles */
     .main-title {{
@@ -525,7 +525,6 @@ elif st.session_state.active_section == "pain":
     st.markdown("<h2>🧘 AI Visual Recovery</h2>", unsafe_allow_html=True)
     st.write("Modular somatic recovery guides based on dance biomechanics.")
     
-    # Raw GitHub URL pathways pointing directly to your uploaded repository images
     RAW_BASE = "https://raw.githubusercontent.com/aditireddybollampally-ui/dance-neuro/main"
     
     ai_recovery_data = {
@@ -568,4 +567,4 @@ elif st.session_state.active_section == "pain":
         col1, col2, col3 = st.columns([0.2, 4, 0.2])
         with col2:
             st.markdown(f"<h4 style='text-align: center; color: {PALETTE['accent_2']};'>Recovery Guide Infographic</h4>", unsafe_allow_html=True)
-            st.image(data["infographic_url"], caption=data["caption"], use_container_width=True)
+            st.image(data["infographic_url"], caption=data["caption"], use_column_width=True)
