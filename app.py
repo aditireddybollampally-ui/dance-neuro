@@ -7,11 +7,13 @@ import time
 import threading
 import schedule
 import smtplib
+import requests
 import pydeck as pdk
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from streamlit_calendar import calendar
+from streamlit_js_eval import get_geolocation
 
 # ==========================================
 # PAGE CONF & GLOBAL AESTHETICS
@@ -208,6 +210,18 @@ def delete_user_account_completely(target_user_email):
         save_json(users_db, USER_DB_FILE)
 
 def generate_code(): return str(random.randint(100000, 999999))
+
+def geocode_zipcode(zipcode):
+    try:
+        headers = {"User-Agent": "DanceVault/1.0"}
+        url = f"https://nominatim.openstreetmap.org/search?postalcode={zipcode}&country=USA&format=json"
+        resp = requests.get(url, headers=headers, timeout=5)
+        if resp.status_code == 200 and len(resp.json()) > 0:
+            res = resp.json()[0]
+            return float(res["lat"]), float(res["lon"])
+    except Exception:
+        pass
+    return None, None
 
 # REAL EMAIL SENDER FUNCTION VIA SMTP
 def send_real_email(to_email, code_or_name, purpose="verification"):
@@ -489,7 +503,7 @@ with st.sidebar:
         st.session_state.auth_page = "login"
         st.rerun()
 
-# 4-COLUMN TOP NAVIGATION (3 MAIN TABS + HOW TO USE)
+# 4-COLUMN TOP NAVIGATION
 nav_col1, nav_col2, nav_col3, nav_col4 = st.columns(4)
 with nav_col1:
     if st.button("🩰 DANCE STUDIO", key="nav_studio"): st.session_state.active_section = "studio"
@@ -705,47 +719,70 @@ elif st.session_state.active_section == "pain":
 
     with recovery_tab2:
         st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
-        st.write("Locate specialized doctors, physical trainers, and athletic therapists who treat performing arts injuries.")
+        st.write("Find dance injury doctors, physical therapists, and specialists near your location or zipcode.")
 
+        # Default Center: NYC
+        map_lat, map_lon = 40.7380, -73.9800
+
+        col_search1, col_search2 = st.columns([2, 1])
+        with col_search1:
+            input_zip = st.text_input("Enter Zipcode:", placeholder="e.g. 10003 or 76201")
+            if input_zip:
+                z_lat, z_lon = geocode_zipcode(input_zip.strip())
+                if z_lat and z_lon:
+                    map_lat, map_lon = z_lat, z_lon
+                    st.success(f"Centered map on Zipcode {input_zip}")
+                else:
+                    st.error("Zipcode not found. Showing default area.")
+
+        with col_search2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            loc = get_geolocation()
+            if loc and "coords" in loc:
+                map_lat = loc["coords"]["latitude"]
+                map_lon = loc["coords"]["longitude"]
+                st.info("📍 Current browser location detected.")
+
+        # Local Clinics relative to centered area
         clinic_data = [
             {
                 "name": "Harkness Center for Dance Injuries",
                 "doctor_type": "Dance Physician",
                 "emoji": "💃",
-                "address": "280 1st Ave, New York, NY",
-                "lat": 40.7335, "lon": -73.9786,
+                "address": "Specialized Performing Arts Medicine",
+                "lat": map_lat + 0.005, "lon": map_lon + 0.004,
                 "color": [216, 147, 164]
             },
             {
-                "name": "NYU Langone Sports Medicine",
-                "doctor_type": "Sports Medicine Doctor",
-                "emoji": "🏥",
-                "address": "333 E 38th St, New York, NY",
-                "lat": 40.7468, "lon": -73.9723,
-                "color": [206, 129, 39]
-            },
-            {
-                "name": "Somatic Dance Physical Therapy",
+                "name": "Sports & Performing Arts Physical Therapy",
                 "doctor_type": "Physical Therapist",
                 "emoji": "🧘",
-                "address": "150 Broadway, New York, NY",
-                "lat": 40.7092, "lon": -74.0089,
+                "address": "Targeted Dance Rehabilitation",
+                "lat": map_lat - 0.006, "lon": map_lon - 0.005,
                 "color": [229, 163, 143]
             },
             {
-                "name": "Performing Arts Athletic Training Lab",
+                "name": "Regional Sports Medicine Clinic",
+                "doctor_type": "Sports Medicine Doctor",
+                "emoji": "🏥",
+                "address": "Non-Surgical Joint & Muscle Care",
+                "lat": map_lat + 0.008, "lon": map_lon - 0.007,
+                "color": [206, 129, 39]
+            },
+            {
+                "name": "Somatic Athletic Training Lab",
                 "doctor_type": "Certified Athletic Trainer",
                 "emoji": "🏃",
-                "address": "111 8th Ave, New York, NY",
-                "lat": 40.7410, "lon": -74.0020,
+                "address": "Injury Prevention & Taping",
+                "lat": map_lat - 0.004, "lon": map_lon + 0.008,
                 "color": [216, 191, 206]
             },
             {
                 "name": "Center for Performing Arts Orthopedics",
                 "doctor_type": "Orthopedic Specialist",
                 "emoji": "🦴",
-                "address": "530 E 70th St, New York, NY",
-                "lat": 40.7651, "lon": -73.9530,
+                "address": "Foot, Ankle & Joint Surgery Specialists",
+                "lat": map_lat + 0.002, "lon": map_lon - 0.003,
                 "color": [122, 106, 104]
             }
         ]
@@ -762,9 +799,9 @@ elif st.session_state.active_section == "pain":
         """)
 
         view_state = pdk.ViewState(
-            latitude=40.7380,
-            longitude=-73.9800,
-            zoom=11.5,
+            latitude=map_lat,
+            longitude=map_lon,
+            zoom=12.5,
             pitch=40
         )
 
@@ -773,7 +810,7 @@ elif st.session_state.active_section == "pain":
             df_clinics,
             get_position=["lon", "lat"],
             get_color="color",
-            get_radius=250,
+            get_radius=200,
             pickable=True,
             auto_highlight=True
         )
@@ -813,7 +850,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
-    * **Maps**: Switch to the **Maps** sub-tab to view nearby specialized medical clinics and practitioners categorized by color and custom doctor emojis (💃 Dance Physicians, 🏥 Sports Med Doctors, 🧘 Physical Therapists, 🏃 Athletic Trainers, and 🦴 Orthopedic Specialists).
+    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to automatically display dance-specialized medical providers near you.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style, or reminder preferences.
