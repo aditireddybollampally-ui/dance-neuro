@@ -881,11 +881,11 @@ elif st.session_state.active_section == "pain":
             sel = st.session_state.selected_clinic
             st.markdown(f"""
             <div class="clinic-card">
-                <h3>📍 Pin #{sel['label']} — {sel['name']}</h3>
-                <p><b>Role / Specialty:</b> {sel['doctor_type']}</p>
-                <p><b>Address:</b> {sel['address']}</p>
-                <p><b>Phone:</b> {sel['phone']}</p>
-                <p><b>Services & Focus:</b> {sel['description']}</p>
+                <h3>📍 Pin #{sel.get('label', '1')} — {sel.get('name', 'Clinic')}</h3>
+                <p><b>Role / Specialty:</b> {sel.get('doctor_type', 'Specialist')}</p>
+                <p><b>Address:</b> {sel.get('address', 'N/A')}</p>
+                <p><b>Phone:</b> {sel.get('phone', 'N/A')}</p>
+                <p><b>Services & Focus:</b> {sel.get('description', 'N/A')}</p>
             </div>
             """, unsafe_allow_html=True)
 
