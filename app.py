@@ -147,10 +147,9 @@ if st.session_state.active_section == "choreo":
     st.divider()
     st.subheader("📅 Interactive Choreo Calendar & Viewer")
     db = load_db()
-    choreo_items = [x for x in db if x.get("type"] == "choreo"]
+    choreo_items = [x for x in db if x.get("type") == "choreo"]
     
     if choreo_items:
-        # Interactive calendar date picker to pull up exact day's choreo records
         selected_calendar_date = st.date_input("Select a Date on the Calendar to View Choreo:", value=datetime.now(), key="cal_choreo_interactive")
         
         filtered_choreo = [item for item in choreo_items if item["date"] == str(selected_calendar_date)]
@@ -236,72 +235,3 @@ elif st.session_state.active_section == "stress":
     }, 4000);
     </script>
     """
-    st.components.v1.html(breathing_html, height=380)
-
-    st.divider()
-    st.subheader("📅 Interactive Journal Calendar & Historical View")
-    db = load_db()
-    stress_items = [x for x in db if x.get("type") == "stress"]
-    
-    if stress_items:
-        selected_journal_date = st.date_input("Select a Date on the Calendar to View Journal Entries:", value=datetime.now(), key="cal_stress_interactive")
-        
-        filtered_stress = [item for item in stress_items if item["date"] == str(selected_journal_date)]
-        
-        if filtered_stress:
-            for item in filtered_stress:
-                st.markdown(f"**📅 Date:** {item['date']} | **Stress Index:** {item['stress_level']}/10")
-                st.write(f"*Journal Notes:* {item['notes']}")
-                st.divider()
-        else:
-            st.info("No journal entries recorded on this specific calendar date.")
-    else:
-        st.info("No journal entries recorded yet.")
-
-# ==========================================
-# SECTION 3: PAIN & VISUAL AI RECOVERY
-# ==========================================
-elif st.session_state.active_section == "pain":
-    st.header("Physical Pain & Visual AI Recovery Protocols")
-    st.write("Select a specific area of somatic tension to view step-by-step instructions accompanied by reference illustrations.")
-    
-    ai_recommendations = {
-        "Plantar Fascia / Arch": {
-            "mechanism": "High impact shock absorption stress (common in classical foot-stamping).",
-            "protocol": "1. Myofascial release using a lacrosse ball under the medial longitudinal arch (2 mins).\n2. Eccentric calf drops to unload insertion points.",
-            "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80"
-        },
-        "Achilles / Calf": {
-            "mechanism": "Repetitive rebound acceleration and plantarflexion overload.",
-            "protocol": "1. Soleus-focused bent-knee wall stretches.\n2. Dynamic ankle dorsiflexion mobility drills.",
-            "image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80"
-        },
-        "Lumbar Spine (Lower Back)": {
-            "mechanism": "Compensatory extension strain during postural alignment or core fatigue.",
-            "protocol": "1. Cat-Camel spinal articulation to reset proprioception.\n2. Dead-bug core stabilization activation.",
-            "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80"
-        },
-        "Hip Flexors / Hamstrings": {
-            "mechanism": "Extreme range-of-motion holding under neuromuscular tension.",
-            "protocol": "1. 90/90 hip transitions for internal/external rotation.\n2. PNF contract-relax stretching for hamstrings.",
-            "image": "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?auto=format&fit=crop&w=600&q=80"
-        },
-        "Cervical Spine / Neck & Shoulders": {
-            "mechanism": "Sympathetic nervous system elevation translated into upper trapezius tension.",
-            "protocol": "1. Vagus nerve stimulation: 4-7-8 diaphragmatic breathing block.\n2. Scapular retraction and thoracic spine rolling.",
-            "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80"
-        }
-    }
-    
-    selected_pain = st.selectbox("Select Active Pain Area:", list(ai_recommendations.keys()))
-    
-    if st.button("Generate Visual Recovery Protocol ⚙️", key="btn_pain"):
-        data = ai_recommendations[selected_pain]
-        st.markdown(f"### 🎯 Target System: {selected_pain}")
-        
-        col_img, col_text = st.columns([1, 1.5])
-        with col_img:
-            st.image(data["image"], caption=f"Recommended Form Reference for {selected_pain}", use_container_width=True)
-        with col_text:
-            st.info(f"**Biomechanical Analysis:** {data['mechanism']}")
-            st.success(f"**Step-by-Step Action Protocol:**\n{data['protocol']}")
