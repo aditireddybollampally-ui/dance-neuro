@@ -156,16 +156,6 @@ st.markdown(f"""
         border: 1px solid {PALETTE["border"]};
         margin-top: 2rem;
     }}
-
-    /* Clinic detail card */
-    .clinic-card {{
-        background-color: #FFFFFF;
-        padding: 1.5rem;
-        border-radius: 15px;
-        border-left: 5px solid {PALETTE["accent_2"]};
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        margin-top: 1rem;
-    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -729,7 +719,7 @@ elif st.session_state.active_section == "pain":
 
     with recovery_tab2:
         st.markdown("<h3>📍 Dance Injury Clinics & Specialists Map</h3>", unsafe_allow_html=True)
-        st.write("Find dance injury doctors, physical therapists, and specialists near your location or zipcode.")
+        st.write("Click on any location pin on the map to view full clinic details directly.")
 
         # Default Center: NYC
         map_lat, map_lon = 40.7380, -73.9800
@@ -756,7 +746,6 @@ elif st.session_state.active_section == "pain":
         # Real Location Pin Data
         clinic_data = [
             {
-                "id": "c1",
                 "name": "Harkness Center for Dance Injuries",
                 "doctor_type": "Dance Physician & Specialized Medical Staff",
                 "phone": "(212) 598-6000",
@@ -765,7 +754,6 @@ elif st.session_state.active_section == "pain":
                 "description": "Comprehensive orthopedic and dance-medicine diagnostic center."
             },
             {
-                "id": "c2",
                 "name": "Somatic Dance Physical Therapy",
                 "doctor_type": "Physical Therapist",
                 "phone": "(212) 349-1100",
@@ -774,7 +762,6 @@ elif st.session_state.active_section == "pain":
                 "description": "Specialized manual therapy, rehab, and pointe readiness assessments."
             },
             {
-                "id": "c3",
                 "name": "Regional Sports & Performing Arts Medicine",
                 "doctor_type": "Sports Medicine Doctor",
                 "phone": "(212) 263-6000",
@@ -784,7 +771,6 @@ elif st.session_state.active_section == "pain":
             },
             {
                 "name": "Somatic Athletic Training Lab",
-                "id": "c4",
                 "doctor_type": "Certified Athletic Trainer",
                 "phone": "(212) 807-7000",
                 "address": "111 8th Ave, New York, NY 10011",
@@ -792,7 +778,6 @@ elif st.session_state.active_section == "pain":
                 "description": "On-site performance taping, neuromuscular re-education, and recovery."
             },
             {
-                "id": "c5",
                 "name": "Center for Performing Arts Orthopedics",
                 "doctor_type": "Orthopedic Specialist",
                 "phone": "(212) 774-2000",
@@ -816,35 +801,30 @@ elif st.session_state.active_section == "pain":
             "ScatterplotLayer",
             df_clinics,
             get_position=["lon", "lat"],
-            get_color=[220, 50, 50, 220],  # Standard Red Location Pin Color
+            get_color=[220, 50, 50, 230],  # Standard Red Location Pin Color
             get_radius=220,
             pickable=True,
             auto_highlight=True
         )
 
+        # Rich interactive tooltip popup directly on pin click/hover
+        tooltip_html = """
+        <div style="background-color: white; color: #4A3E3D; padding: 12px; border-radius: 10px; font-family: sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.15); max-width: 280px;">
+            <h4 style="margin:0 0 5px 0; color:#D893A4;">📍 {name}</h4>
+            <p style="margin:3px 0; font-size:12px;"><b>Role:</b> {doctor_type}</p>
+            <p style="margin:3px 0; font-size:12px;"><b>Address:</b> {address}</p>
+            <p style="margin:3px 0; font-size:12px;"><b>Phone:</b> {phone}</p>
+            <p style="margin:3px 0; font-size:11px; color:#7A6A68;">{description}</p>
+        </div>
+        """
+
         r = pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            tooltip={"html": "<b>📍 {name}</b><br/><i>Click pin below to select details</i>"}
+            tooltip={"html": tooltip_html}
         )
 
         st.pydeck_chart(r)
-
-        # Interactive Clinic Details Dropdown Selector
-        st.markdown("<br>", unsafe_allow_html=True)
-        selected_clinic_name = st.selectbox("📍 Select a clinic pin location to view full details:", [c["name"] for c in clinic_data])
-        
-        selected_info = next((c for c in clinic_data if c["name"] == selected_clinic_name), None)
-        if selected_info:
-            st.markdown(f"""
-            <div class="clinic-card">
-                <h3>📍 {selected_info['name']}</h3>
-                <p><b>Role / Specialty:</b> {selected_info['doctor_type']}</p>
-                <p><b>Address:</b> {selected_info['address']}</p>
-                <p><b>Phone:</b> {selected_info['phone']}</p>
-                <p><b>Services & Focus:</b> {selected_info['description']}</p>
-            </div>
-            """, unsafe_allow_html=True)
 
 # ==========================================
 # SECTION 4: HOW TO USE GUIDE
@@ -873,7 +853,7 @@ elif st.session_state.active_section == "how_to":
 
     ### 🧘 3. AI Recovery Guide
     * **Recovery Stretches**: Under the **Recovery Stretches** sub-tab, select any area of somatic tension (Plantar Fascia, Achilles/Calf, Lower Back, Hip Flexors, or Neck) to view high-resolution myofascial release infographics.
-    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to display dance-specialized medical providers near you. Select any clinic location to view its address, doctor role, phone number, and specialized services.
+    * **Maps**: Switch to the **Maps** sub-tab to locate nearby clinics. You can enter a 5-digit zipcode or enable browser location permission to display dance-specialized medical providers near you. Click directly on any red map marker pin to display the clinic's address, doctor role, phone number, and specialized services.
 
     ### 👤 Account Management & Security
     * **Profile Customization**: Open the sidebar expander to change your avatar, preferred name, dance style, or reminder preferences.
