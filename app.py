@@ -903,10 +903,10 @@ elif st.session_state.active_section == "stress":
                 breathing_placeholder.info("Click 'START SESSION' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
 # ==========================================
-# SECTION 3: STRETCH CLINIC
+# SECTION 3: STRETCH STUDIO
 # ==========================================
 elif st.session_state.active_section == "pain":
-    st.markdown("<h2>STRETCH CLINIC</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>STRETCH STUDIO</h2>", unsafe_allow_html=True)
     st.write("Modular somatic recovery guides, holistic advice, and clinical specialist directories based on dance biomechanics.")
     
     recovery_tab1, recovery_tab2 = st.tabs(["Recovery Guides & Advice", "Maps"])
@@ -1154,7 +1154,7 @@ elif st.session_state.active_section == "how_to":
     * **Motivational Quotes:** View 1,000 inspirational quotes in slide format. Click **SAVE TO COLLECTION** to build your personal favorites list.
     * **Breathing Guide:** Practice the 4-4-4-4 box breathing cycle before or after practice.
     
-    ### 3. Stretch Clinic Guide
+    ### 3. Stretch Studio Guide
     * **Recovery Guides & Advice:** Select any area of somatic tension to view stretching infographics alongside myofascial release advice and posture tips.
     * **Maps:** View nearby dance clinics rendered seamlessly on a map displaying city details and labels based on user location services or entered zipcodes.
     
