@@ -533,57 +533,110 @@ elif st.session_state.active_section == "stress":
 
 elif st.session_state.active_section == "pain":
     st.markdown("<h2>Recover Clinic</h2>", unsafe_allow_html=True)
-
-    input_zip = st.text_input("Override Zipcode:", placeholder="e.g. 10003, 76201, 90210")
-    lat, lon, city, state = None, None, "Detected Area", "US"
-
-    if input_zip.strip():
-        z_lat, z_lon, z_city, z_state = get_zip_coords(input_zip.strip())
-        if z_lat and z_lon:
-            lat, lon, city, state = z_lat, z_lon, z_city, z_state
-            st.success(f"Centered on zipcode {input_zip.strip()} ({city}, {state})")
-
-    if lat is None or lon is None:
-        user_loc = get_geolocation()
-        if isinstance(user_loc, dict) and "coords" in user_loc and user_loc["coords"]:
-            lat = user_loc["coords"]["latitude"]
-            lon = user_loc["coords"]["longitude"]
-            city, state, _ = reverse_geocode(lat, lon)
-        else:
-            lat, lon, city, state = 40.7380, -73.9800, "New York", "NY"
-            st.info("Location services unavailable. Showing default view (type a zipcode above to change location).")
-
-    clinics = [
-        {"label": str(i + 1), "lat": lat + (i * 0.003 - 0.006), "lon": lon + (i * 0.003 - 0.006), 
-         "name": f"{city} Somatic Care Center #{i+1}", "phone": "(555) 019-2831"} 
-        for i in range(5)
-    ]
     
-    df_clinics = pd.DataFrame(clinics)
-    st.map(df_clinics, latitude="lat", longitude="lon", zoom=12, size=50)
+    rec_tab1, rec_tab2 = st.tabs(["Recovery Guides", "Clinic Map"])
 
-    st.markdown("#### Select Clinic for Details:")
-    c_cols = st.columns(len(clinics))
-    for idx, clinic in enumerate(clinics):
-        if c_cols[idx].button(f"{clinic['label']}"):
-            st.session_state.selected_clinic = clinic
+    with rec_tab1:
+        RAW_BASE = "https://raw.githubusercontent.com/aditireddybollampally-ui/dance-neuro/main"
+        
+        recovery_guides = {
+            "Plantar Fascia (Foot)": {
+                "mechanism": "High impact stamping stress, hard studio floors, and repetitive arch loading.",
+                "img": f"{RAW_BASE}/4eb93dc5-a2c3-4676-929e-2d488976471f.jpeg",
+                "myofascial": "Roll a frozen water bottle under the arch for 3-5 minutes daily.",
+                "contrast": "Apply ice for 10-15 minutes immediately after rehearsals.",
+                "posture": "Use cushioned arch support slides or orthopedic insoles between rehearsals.",
+                "prevention": "Perform calf Eccentric Heel Drops off a step."
+            },
+            "Achilles / Calf": {
+                "mechanism": "Repetitive jumps, releve overload, and sudden landing impacts.",
+                "img": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra.png",
+                "myofascial": "Use a high-density foam roller along the gastrocnemius.",
+                "contrast": "Apply moist heat before class and ice post-practice.",
+                "posture": "Wear supportive sneakers with a slight heel drop during non-dance hours.",
+                "prevention": "Focus on controlled plié depth during landings."
+            },
+            "Lower Back": {
+                "mechanism": "Postural holding strain and core fatigue.",
+                "img": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(1).png",
+                "myofascial": "Place a soft massage ball under the gluteus medius.",
+                "contrast": "Use gentle heating pads for 15 minutes before bedtime.",
+                "posture": "Ensure non-dance footwear has adequate shock absorption.",
+                "prevention": "Engage deep core activation during back cambré."
+            }
+        }
 
-    if st.session_state.selected_clinic:
-        c = st.session_state.selected_clinic
-        st.markdown(f"""
-            <div class="card card-accent">
-                <h4>{c['name']}</h4>
-                <p><b>Phone:</b> {c['phone']}</p>
-                <p>Specialized physical therapy and somatic performance recovery.</p>
-            </div>
-        """, unsafe_allow_html=True)
+        selected_area = st.selectbox("Select Area of Tension:", list(recovery_guides.keys()))
+        if selected_area:
+            info = recovery_guides[selected_area]
+            st.divider()
+            st.markdown(f"### Focus: {selected_area}")
+            st.caption(f"Context: {info['mechanism']}")
+            
+            col_img, col_tips = st.columns([1, 1])
+            with col_img:
+                st.image(info["img"], use_container_width=True)
+            with col_tips:
+                st.markdown(f"""
+                    <div class="card card-accent">
+                        <p><b>Myofascial Release:</b><br>{info['myofascial']}</p>
+                        <p><b>Heat & Ice:</b><br>{info['contrast']}</p>
+                        <p><b>Footwear & Posture:</b><br>{info['posture']}</p>
+                        <p><b>Prevention:</b><br>{info['prevention']}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+    with rec_tab2:
+        input_zip = st.text_input("Override Zipcode:", placeholder="e.g. 10003, 76201, 90210")
+        lat, lon, city, state = None, None, "Detected Area", "US"
+
+        if input_zip.strip():
+            z_lat, z_lon, z_city, z_state = get_zip_coords(input_zip.strip())
+            if z_lat and z_lon:
+                lat, lon, city, state = z_lat, z_lon, z_city, z_state
+                st.success(f"Centered on zipcode {input_zip.strip()} ({city}, {state})")
+
+        if lat is None or lon is None:
+            user_loc = get_geolocation()
+            if isinstance(user_loc, dict) and "coords" in user_loc and user_loc["coords"]:
+                lat = user_loc["coords"]["latitude"]
+                lon = user_loc["coords"]["longitude"]
+                city, state, _ = reverse_geocode(lat, lon)
+            else:
+                lat, lon, city, state = 40.7380, -73.9800, "New York", "NY"
+                st.info("Location services unavailable. Showing default view (type a zipcode above to change location).")
+
+        clinics = [
+            {"label": str(i + 1), "lat": lat + (i * 0.003 - 0.006), "lon": lon + (i * 0.003 - 0.006), 
+             "name": f"{city} Somatic Care Center #{i+1}", "phone": "(555) 019-2831"} 
+            for i in range(5)
+        ]
+        
+        df_clinics = pd.DataFrame(clinics)
+        st.map(df_clinics, latitude="lat", longitude="lon", zoom=12, size=50)
+
+        st.markdown("#### Select Clinic for Details:")
+        c_cols = st.columns(len(clinics))
+        for idx, clinic in enumerate(clinics):
+            if c_cols[idx].button(f"{clinic['label']}"):
+                st.session_state.selected_clinic = clinic
+
+        if st.session_state.selected_clinic:
+            c = st.session_state.selected_clinic
+            st.markdown(f"""
+                <div class="card card-accent">
+                    <h4>{c['name']}</h4>
+                    <p><b>Phone:</b> {c['phone']}</p>
+                    <p>Specialized physical therapy and somatic performance recovery.</p>
+                </div>
+            """, unsafe_allow_html=True)
 
 elif st.session_state.active_section == "how_to":
     st.markdown("<h2>User Guide</h2>", unsafe_allow_html=True)
     st.markdown("""
     * Studio: Store and track video and audio rehearsals.
     * Brain Studio: Track mental strain, save quotes, and practice guided breathing.
-    * Recover Clinic: Find sports medicine clinics and somatic treatment resources.
+    * Recover Clinic: Find recovery stretching guides and sports medicine clinics.
     
     Need help? Reach us at dancevaultneuroapp@gmail.com
     """)
