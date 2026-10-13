@@ -15,9 +15,7 @@ from datetime import datetime
 from streamlit_calendar import calendar
 from streamlit_js_eval import get_geolocation
 
-# ==========================================
-# PAGE CONF & GLOBAL AESTHETICS
-# ==========================================
+
 st.set_page_config(
     page_title="DanceVault | Modular NeuroDance Vault", 
     page_icon="🩰", 
@@ -25,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Define the "Berry Calming" Palette
+# Color Palette
 PALETTE = {
     "bg": "#FDFBFB",      # Main background
     "card": "#FFFFFF",     # Content cards
@@ -38,7 +36,6 @@ PALETTE = {
     "accent_4": "#D8BFCE"  # Lavender accent
 }
 
-# Apply Global CSS
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Great+Vibes&display=swap');
@@ -171,9 +168,7 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# LOCAL DATA & DIRECTORY SETUP
-# ==========================================
+#data
 VAULT_DIR = "./local_dance_vault"
 DB_FILE = "./vault_database.json"
 USER_DB_FILE = "./users_database.json"
@@ -256,7 +251,7 @@ def reverse_geocode_coordinates(lat, lon):
         pass
     return "Detected Area", "US", "Local"
 
-# REAL EMAIL SENDER FUNCTION VIA SMTP
+# email send
 def send_real_email(to_email, code_or_name, purpose="verification"):
     try:
         smtp_email = st.secrets["smtp"]["email"]
@@ -311,9 +306,7 @@ DanceVault Team
         print(f"Failed to send email to {to_email}: {e}")
         return False
 
-# ==========================================
-# BACKGROUND SCHEDULER FOR JOURNAL REMINDERS
-# ==========================================
+# reminders
 def dispatch_daily_reminders():
     users = load_json(USER_DB_FILE, {})
     for email, profile in users.items():
@@ -330,9 +323,7 @@ if "scheduler_started" not in st.session_state:
     st.session_state.scheduler_started = True
     threading.Thread(target=run_scheduler, daemon=True).start()
 
-# ==========================================
-# ALL 50 DANCE STYLES LIST
-# ==========================================
+# styles list
 DANCE_STYLES = [
     "Afrobeat", "Acro Dance", "Bachata", "Ballet", "Ballroom", 
     "Belly Dance", "Bharatanatyam", "Bhangra", "Breakdancing (B-Boying)", "Capoeira", 
@@ -348,9 +339,7 @@ DANCE_STYLES = [
 
 AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
 
-# ==========================================
-# DYNAMIC MOTIVATIONAL QUOTES GENERATOR (1,000 QUOTES)
-# ==========================================
+# quotes gen
 @st.cache_data
 def generate_1000_quotes():
     core_quotes = [
@@ -401,9 +390,7 @@ def generate_1000_quotes():
 
 MOTIVATIONAL_QUOTES = generate_1000_quotes()
 
-# ==========================================
-# MOVES DATA GENERATOR FOR ALL 50 STYLES (10 MOVES EACH - TEXT ONLY)
-# ==========================================
+# moves data
 MOVES_RAW = {
     "Afrobeat": ["Shaku Shaku", "Zanku", "Network", "Gwara Gwara", "Kpakujemu", "Skelewu", "Azonto", "Leg Work", "Kupe", "Pilolo"],
     "Acro Dance": ["Cartwheel", "Walkover (Front/Back)", "Elbow Stand", "Chest Stand", "Arabesque Roll", "Handstand Bridge", "Valdez", "Side Leap with Passé", "Acro Turn", "Aerial"],
@@ -474,9 +461,7 @@ def build_all_dance_moves_database():
 
 DANCE_MOVES_DATABASE = build_all_dance_moves_database()
 
-# ==========================================
-# INITIALIZE SESSION STATE
-# ==========================================
+# log in
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "user_email" not in st.session_state: st.session_state.user_email = ""
 if "auth_page" not in st.session_state: st.session_state.auth_page = "login"
@@ -488,9 +473,7 @@ if 'selected_clinic' not in st.session_state: st.session_state.selected_clinic =
 if 'quote_index' not in st.session_state: st.session_state.quote_index = 0
 if 'saved_quotes' not in st.session_state: st.session_state.saved_quotes = []
 
-# ==========================================
-# GATEWAY (Sign In / Sign Up)
-# ==========================================
+# sign in/up
 if not st.session_state.logged_in:
     st.markdown('<h1 class="main-title">DanceVault</h1>', unsafe_allow_html=True)
     st.markdown('<div class="script-subtitle">Dance. Track. Breathe. Stretch. Repeat.</div>', unsafe_allow_html=True)
@@ -630,9 +613,7 @@ if not st.session_state.logged_in:
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# ==========================================
-# LOAD PROFILE & VAULT DATA
-# ==========================================
+# load data
 users_db = load_json(USER_DB_FILE, {})
 user_profile = users_db.get(st.session_state.user_email, {})
 vault_db_items = load_json(DB_FILE, [])
@@ -676,7 +657,7 @@ with st.sidebar:
         st.session_state.auth_page = "login"
         st.rerun()
 
-# 4-COLUMN TOP NAVIGATION
+# nav
 nav_col1, nav_col2, nav_col3, nav_col4 = st.columns(4)
 with nav_col1:
     if st.button("DANCE STUDIO", key="nav_studio"): st.session_state.active_section = "studio"
@@ -697,9 +678,7 @@ calendar_options = {
     "contentHeight": "auto",
 }
 
-# ==========================================
-# SECTION 1: DANCE STUDIO (TEXT-ONLY MOVES LIBRARY)
-# ==========================================
+# dance studio
 if st.session_state.active_section == "studio":
     st.markdown("<h2>Dance Studio & Media Vault</h2>", unsafe_allow_html=True)
     studio_tab1, studio_tab2 = st.tabs(["Media Rehearsals", "Moves Library (10 Moves Per Style)"])
@@ -781,9 +760,7 @@ if st.session_state.active_section == "studio":
                             """, unsafe_allow_html=True)
                 st.markdown("<br>", unsafe_allow_html=True)
 
-# ==========================================
-# SECTION 2: NEURO STUDIO
-# ==========================================
+# neuro studio
 elif st.session_state.active_section == "stress":
     st.markdown("<h2>Neuro Studio</h2>", unsafe_allow_html=True)
     neuro_tab1, neuro_tab2, neuro_tab3 = st.tabs(["Journal & Reminders", "Motivational Quotes", "Breathing Guide"])
@@ -902,9 +879,7 @@ elif st.session_state.active_section == "stress":
             else:
                 breathing_placeholder.info("Click 'START SESSION' to begin the guided 4-4-4-4 Neuro-Breathing cycle.")
 
-# ==========================================
-# SECTION 3: STRETCH STUDIO
-# ==========================================
+# stretch studio
 elif st.session_state.active_section == "pain":
     st.markdown("<h2>STRETCH STUDIO</h2>", unsafe_allow_html=True)
     st.write("Modular somatic recovery guides, holistic advice, and clinical specialist directories based on dance biomechanics.")
@@ -1132,9 +1107,7 @@ elif st.session_state.active_section == "pain":
             </div>
             """, unsafe_allow_html=True)
 
-# ==========================================
-# SECTION 4: HOW TO USE GUIDE
-# ==========================================
+# how to use
 elif st.session_state.active_section == "how_to":
     st.markdown("<h2>How to Use DanceVault</h2>", unsafe_allow_html=True)
     st.write("Welcome to your complete user guide for navigating all sections of **DanceVault**.")
