@@ -845,16 +845,36 @@ elif st.session_state.active_section == "stress":
                 st.session_state.quote_index = (st.session_state.quote_index + 1) % len(MOTIVATIONAL_QUOTES)
                 st.rerun()
 
+        
         if st.session_state.saved_quotes:
             st.divider()
             st.markdown("<h4>Your Saved Favorites Collection</h4>", unsafe_allow_html=True)
+
             for s_idx, sq in enumerate(st.session_state.saved_quotes):
                 st.markdown(f"""
-                <div style="background-color:#FFFFFF; padding:1rem; border-radius:12px; border-left:4px solid {PALETTE['accent_2']}; margin-bottom:0.8rem; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
-                    <p style="margin:0; font-style:italic;">"{sq['text']}"</p>
-                    <p style="margin:0; text-align:right; font-weight:600; color:{PALETTE['accent_1']};">— {sq['author']}</p>
+                <div style="background-color:#FFFFFF; padding:1rem;
+                            border-radius:12px;
+                            border-left:4px solid {PALETTE['accent_2']};
+                            margin-bottom:0.4rem;
+                            box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+                    <p style="margin:0; font-style:italic;">
+                        "{sq['text']}"
+                    </p>
+                    <p style="margin:0; text-align:right;
+                              font-weight:600;
+                              color:{PALETTE['accent_1']};">
+                        — {sq['author']}
+                    </p>
                 </div>
                 """, unsafe_allow_html=True)
+
+                if st.button(
+                    "REMOVE FROM COLLECTION",
+                    key=f"remove_saved_quote_{s_idx}"
+                ):
+                    st.session_state.saved_quotes.pop(s_idx)
+                    st.toast("Quote removed from your collection.")
+                    st.rerun()
 
     with neuro_tab3:
         st.subheader("Breathing Guide (4-4-4-4)")
