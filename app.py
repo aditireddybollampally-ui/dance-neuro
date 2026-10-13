@@ -681,7 +681,7 @@ nav_col1, nav_col2, nav_col3, nav_col4 = st.columns(4)
 with nav_col1:
     if st.button("DANCE STUDIO", key="nav_studio"): st.session_state.active_section = "studio"
 with nav_col2:
-    if st.button("NEURO LOUNGE", key="nav_neuro"): st.session_state.active_section = "stress"
+    if st.button("NEURO STUDIO", key="nav_neuro"): st.session_state.active_section = "stress"
 with nav_col3:
     if st.button("AI RECOVERY", key="nav_recovery"): st.session_state.active_section = "pain"
 with nav_col4:
@@ -782,10 +782,10 @@ if st.session_state.active_section == "studio":
                 st.markdown("<br>", unsafe_allow_html=True)
 
 # ==========================================
-# SECTION 2: NEURO LOUNGE
+# SECTION 2: NEURO STUDIO
 # ==========================================
 elif st.session_state.active_section == "stress":
-    st.markdown("<h2>Neuro Lounge</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>Neuro Studio</h2>", unsafe_allow_html=True)
     neuro_tab1, neuro_tab2, neuro_tab3 = st.tabs(["Journal & Reminders", "Motivational Quotes", "Breathing Guide"])
     
     with neuro_tab1:
@@ -1149,7 +1149,7 @@ elif st.session_state.active_section == "how_to":
     * **Media Rehearsals:** Upload, store, and review rehearsal videos and audio files on the calendar.
     * **Moves Library:** Select any of the 50 dance styles from the dropdown menu to explore 10 foundational dance moves complete with descriptions and step-by-step instructions ("How To Do It").
     
-    ### 2. Neuro Lounge Guide
+    ### 2. Neuro Studio Guide
     * **Journal & Reminders:** Log daily mental strain ratings (1-10) and reflections, or test automated email reminders.
     * **Motivational Quotes:** View 1,000 inspirational quotes in slide format. Click **SAVE TO COLLECTION** to build your personal favorites list.
     * **Breathing Guide:** Practice the 4-4-4-4 box breathing cycle before or after practice.
