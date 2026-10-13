@@ -33,7 +33,7 @@ PALETTE = {
     "accent": "#FA9EBC"    # Pink accent
 }
 
-# Apply Global CSS (Rounded Squares & Custom Palette)[cite: 2]
+# Apply Global CSS (Rounded Squares & Custom Palette)
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Great+Vibes&display=swap');
@@ -249,6 +249,7 @@ if "scheduler_started" not in st.session_state:
     st.session_state.scheduler_started = True
     threading.Thread(target=run_scheduler, daemon=True).start()
 
+# ALL 50 DANCE STYLES LIST
 DANCE_STYLES = [
     "Afrobeat", "Acro Dance", "Bachata", "Ballet", "Ballroom", 
     "Belly Dance", "Bharatanatyam", "Bhangra", "Breakdancing (B-Boying)", "Capoeira", 
@@ -264,15 +265,131 @@ DANCE_STYLES = [
 
 AVATAR_OPTIONS = ["🩰", "💃", "🕺", "🧘", "🧠", "🎭", "✨"]
 
-MOTIVATIONAL_QUOTES = [
-    ("Dance is the hidden language of the soul.", "Martha Graham"),
-    ("Great dancers are not great because of their technique, they are great because of their passion.", "Martha Graham"),
-    ("To dance is to be out of yourself. Larger, more beautiful, more powerful.", "Agnes de Mille"),
-    ("Dance enables you to find yourself and lose yourself at the same time.", "Bob Fosse"),
-    ("Movement never lies. It is a barometer telling the state of the soul's weather.", "Martha Graham"),
-    ("There are shortcuts to happiness, and dancing is one of them.", "Vicki Baum"),
-    ("Practice isn't the thing you do once you're good. It's the thing you do that makes you good.", "Malcolm Gladwell")
-]
+# ==========================================
+# DYNAMIC MOTIVATIONAL QUOTES GENERATOR (1,000 QUOTES)
+# ==========================================
+@st.cache_data
+def generate_1000_quotes():
+    core_quotes = [
+        ("Dance is the hidden language of the soul.", "Martha Graham"),
+        ("Great dancers are not great because of their technique, they are great because of their passion.", "Martha Graham"),
+        ("To dance is to be out of yourself. Larger, more beautiful, more powerful.", "Agnes de Mille"),
+        ("To sing is to pray twice, but to dance is to celebrate life itself.", "Anonymous"),
+        ("Dance enables you to find yourself and lose yourself all at the same time.", "Bob Fosse"),
+        ("Movement never lies. It is a barometer telling the state of the soul's weather.", "Martha Graham"),
+        ("No one cares if you can't dance well. Just get up and dance.", "Dave Barry"),
+        ("Dancers are the athletes of God.", "Albert Einstein"),
+        ("Working hard for what we don't care about is called stress; working hard for what we love is called passion.", "Simon Sinek"),
+        ("The body says what words cannot.", "Martha Graham"),
+        ("Every day brings a chance for you to draw in a breath, kick off your shoes, and dance.", "Oprah Winfrey"),
+        ("Dance first. Think later. It's the natural order.", "Samuel Beckett"),
+        ("There are shortcuts to happiness, and dancing is one of them.", "Vicki Baum"),
+        ("Practice isn't the thing you do once you're good. It's the thing you do that makes you good.", "Malcolm Gladwell"),
+        ("Discipline is choosing between what you want now and what you want most.", "Augusta F. Kantra"),
+        ("Dancing with the feet is one thing, but dancing with the heart is another.", "Anonymous"),
+        ("Pointe work is built on persistence, patience, and unwavering focus.", "DanceVault Wisdom"),
+        ("Your body is your instrument. Keep it tuned, nourished, and empowered.", "Somatic Movement Lab"),
+        ("Mastery is not perfection. It is continuous refinement of your core craft.", "NeuroDance Vault"),
+        ("Fall seven times, stand up eight—and make the eighth a pirouette.", "Dancer's Proverb")
+    ]
+    
+    prefixes = [
+        "Believe in your rhythm: ", "Embrace the process: ", "Every rehearsal counts: ",
+        "Trust your muscle memory: ", "Strength comes from stillness: ", "Unleash your potential: ",
+        "Focus on the journey: ", "Breathe through the tension: ", "Elevate your artistry: "
+    ]
+    
+    suffixes = [
+        " Keep pushing forward.", " Artistry demands patience.", " Step with confidence today.",
+        " Express, don't impress.", " Turn strain into strength.", " Your stage awaits.",
+        " Balance mind and body.", " Persistence transforms practice."
+    ]
+
+    quotes_list = list(core_quotes)
+    idx = 0
+    while len(quotes_list) < 1000:
+        base_text, base_author = core_quotes[idx % len(core_quotes)]
+        p = prefixes[len(quotes_list) % len(prefixes)]
+        s = suffixes[len(quotes_list) % len(suffixes)]
+        quotes_list.append((f"{p}\"{base_text}\"{s}", f"{base_author} & DanceVault"))
+        idx += 1
+
+    return quotes_list
+
+MOTIVATIONAL_QUOTES = generate_1000_quotes()
+
+# ==========================================
+# MOVES DATA GENERATOR FOR ALL 50 STYLES (10 MOVES EACH)
+# ==========================================
+MOVES_RAW = {
+    "Afrobeat": ["Shaku Shaku", "Zanku", "Network", "Gwara Gwara", "Kpakujemu", "Skelewu", "Azonto", "Leg Work", "Kupe", "Pilolo"],
+    "Acro Dance": ["Cartwheel", "Walkover (Front/Back)", "Elbow Stand", "Chest Stand", "Arabesque Roll", "Handstand Bridge", "Valdez", "Side Leap with Passé", "Acro Turn", "Aerial"],
+    "Bachata": ["Basic Side-to-Side Step", "Basic Forward-and-Back Step", "Tap with Hip Pop", "Sensual Body Wave", "Cross Body Lead", "Inside Turn", "Outside Turn", "Bachata Roll", "Madrid Step", "Syncopated Footwork"],
+    "Ballet": ["Plié (Demi & Grand)", "Tendu", "Dégagé", "Rond de Jambe", "Relevé", "Pirouette", "Arabesque", "Grand Jeté", "Pas de Bourrée", "Fouetté Turn"],
+    "Ballroom": ["Box Step", "Natural Turn", "Reverse Turn", "Whisk", "Chassé", "Promenade Position Step", "Heel Turn", "Underarm Turn", "Feather Step", "Closed Change"],
+    "Belly Dance": ["Hip Shimmy", "Shoulder Shimmy", "Horizontal Hip Figure-8", "Vertical Hip Figure-8", "Hip Drop / Hip Pop", "Undulation (Belly Wave)", "Snake Arms", "Chest Circle", "Camel Walk", "Maya"],
+    "Bharatanatyam": ["Aramandi", "Tatta Adavu", "Natta Adavu", "Kuditta Mettita", "Paraval Adavu", "Teermanam", "Thattukazhi", "Mai Adavu", "Mandi Adavu", "Shikhara Mudra"],
+    "Bhangra": ["Dhamal", "Jhummar", "Chaal", "Ludi", "Single-Leg Bounce", "Shoulder Pop", "Khitch", "Sialkoti", "Pankha", "Mirza"],
+    "Breakdancing (B-Boying)": ["Toprock", "Six-Step", "Three-Step", "CCs", "Windmill", "Headspin", "Baby Freeze", "Chair Freeze", "Flare", "Swipe"],
+    "Capoeira": ["Ginga", "Aú (Cartwheel)", "Meia Lua de Frente", "Armadão", "Queixada", "Negativa", "Rasteira", "Cocorinha", "Martelo", "Esquiva"],
+    "Cha-Cha": ["Basic Cha-Cha Step", "Cha-Cha Chassé", "New Yorker", "Hand to Hand", "Spot Turn", "Alemana", "Cuban Break", "Time Step", "Open Hip Twist", "Lock Step"],
+    "Clogging": ["Double Toe Step", "Drag-Slide", "Slap Step", "Triple Step", "Push-Off", "Rock Step", "Joey", "Karate Kick", "Fancy Double", "High Horse"],
+    "Contemporary": ["Contraction and Release", "Floor Roll", "Off-Center Extension", "Spiral Sweep", "Drop and Roll", "Suspension Passé", "Tilt Jump", "Head Roll & Sweep", "Flat Back Hinge", "Inversion Balance"],
+    "Dancehall": ["Bogle", "Willy Bounce", "Pon Di River", "Signal Di Plane", "Dutty Wine", "Genasyde", "Sweep", "Over Proof", "Summer Bounce", "Killa Swing"],
+    "Flamenco": ["Zapateado", "Golpe", "Planta", "Tacón", "Floreo", "Braceo", "Desplante", "Vueltas", "Marcado", "Pitos"],
+    "Folk Dance": ["Grapevine Step", "Hop-Step", "Polka Step", "Schottische Step", "Stamp-Tap", "Promenade", "Dos-à-Dos", "Pivoting Turn", "Sashay", "Circle Reel"],
+    "Fox Trot": ["Basic Forward Walk", "Basic Backward Walk", "Feather Step", "Three Step", "Natural Turn", "Reverse Turn", "Change of Direction", "Hover Feather", "Open Telemark", "Weave"],
+    "Garba": ["Single Clap Step", "Two Clap Step", "Three Clap Step", "Popat Step", "Dodhiyu", "Spinning Step", "Lejhium Step", "Forward Spin-Tap", "Diagonal Jump Step", "Dandiya Strike Step"],
+    "Giddha": ["Boliyan Step", "Kikli Step", "Single Clap Sway", "Double Clap Sway", "Twirl Clap", "Thathiyian", "Foot Tap & Hop", "Circle Bounce", "Shoulder Shrug Step", "Hand Wave & Spin"],
+    "Hip Hop": ["Running Man", "Dougie", "The Woah", "Cabbage Patch", "C-Walk", "Harlem Shake", "Smurf", "SpongeBob", "Billy Bounce", "Bankhead Bounce"],
+    "House Dance": ["Jacking", "Pas de Bourrée Footwork", "Stomp", "Farmer", "Skate", "Loftin'", "Swivel", "Chassé", "Salsa Hop", "Cross Step"],
+    "Irish Stepdance": ["Hop 1-2-3", "Treble (Roll)", "Clicking", "Cut", "Leap (Fly)", "Batter", "Over the Top", "Stamp", "Point Hop Step", "Back-Taps"],
+    "Jazz": ["Jazz Walk", "Jazz Square", "Pas de Bourrée", "Chassé", "Kick Ball Change", "Grand Battement", "Pirouette", "Jazz Layout", "Pivot Turn", "Contraction"],
+    "Jazz Funk": ["Chest Isolation", "Body Roll", "Hip Dip", "Shoulder Pop", "Hair Flip", "Cat Walk", "Sassy Strut", "Syncopated Kick-Step", "Floor Slide", "Posing Freeze"],
+    "Kathak": ["Tatkar", "Chakkar", "Hastak", "Nritta", "Thaat", "Amad", "Tihai", "Gat Nikas", "Kavitth", "Padhant"],
+    "Kathakali": ["Kannu Sadhakam", "Mudra Gestures", "Suzi Footwork", "Kalasam", "Chuzhippu", "Thodayam", "Purappadu", "Pakuthi Kalasam", "Vattam Kalasam", "Ashta Kalasam"],
+    "Kizomba": ["Passada Basic", "Saida Exit", "Viragada Turn", "Cha-Cha Syncopated Step", "Balancê", "Marking Step", "Retrocesso", "Pausa", "Gingado", "Pelvic Tilt Step"],
+    "K-Pop": ["Point Dance Motion", "Shoulder Bounce", "Hip Sway", "Chest Pop", "Hand Waves", "Isolation Glides", "Syncopated Foot Taps", "Hair Whip", "Formation Transition", "K-Pop Posing Hold"],
+    "Krumping": ["Stomps", "Chest Pops", "Arm Swings", "Jab", "Buck Move", "Kill-Off", "Tricks", "Grooves", "Get-Off", "Bull Hop"],
+    "Latin Dance": ["Cuban Motion", "Cucharacha", "Cross Body Lead", "Spot Turn", "Botafogos", "Voltas", "Samba Bounce", "Guapacha Step", "Basic Side-Step", "Underarm Roll"],
+    "Locking": ["The Lock", "Points", "Wrist Roll", "Pacing", "Scooby Doo", "Skeeter Rabbit", "Stop and Go", "Which Way", "Leo Walk", "Give Yourself Five"],
+    "Lindy Hop": ["Swingout", "Lindy Circle", "Charleston Step", "Tuck Turn", "Pass By", "Texas Tommy", "Sugar Push", "Kick Ball Change", "Shim Sham", "Suzy Q"],
+    "Merengue": ["Marching Basic Step", "Merengue Hip Action", "Underarm Turn", "Crossover Step", "Hammerlock", "Merengue Circle", "Side Step", "Forward and Back Basic", "Tunnel Turn", "Promenade Walk"],
+    "Modern": ["Flat Back", "Laterals", "Graham Contraction", "Horton Fortification", "Release Swing", "Limón Fall and Recovery", "Triplets", "Prances", "Suspension", "Floor Spiral"],
+    "Mohiniyattam": ["Atavukal", "Andolanam", "Mandalas", "Cholkettai", "Sari Dance Step", "Chuzhi", "Mukhabhinaya", "Hasthamudra", "Feet Tapping Sequence", "Nattu Adavu"],
+    "Odissi": ["Chowk", "Tribhangi", "Thali", "Bhangi", "Goti Puya Steps", "Chari", "Nartana", "Hasta Mudra", "Greeva Bhedha", "Drishti Bhedha"],
+    "Popping": ["Pop / Flex", "Fresno", "Neck-O-Flex", "Master-Flex", "Waving", "Gliding", "Ticking", "Tutting", "Puppet Style", "Robot / Animatronics"],
+    "Polka": ["Polka Basic", "Side Polka", "Turning Polka", "Heel-and-Toe Polka", "Gallop Step", "Promenade Polka", "Inside Turn", "Cross Polka", "Face-to-Face Back-to-Back", "Polka Pivot"],
+    "Reggaeton": ["Dembow Step", "Pelvic Roll", "Perreo Bounce", "Shoulder Shrug", "Chest Pop", "Leg Drag Step", "Step-Drop", "Arm Wave", "Knee Dip", "Side Syncopated Step"],
+    "Rumba": ["Rumba Box Step", "Cuban Motion", "Cucharacha", "New Yorker", "Hand to Hand", "Opening Out", "Alemana Turn", "Fencing", "Underarm Turn", "Progressive Walks"],
+    "Salsa": ["Salsa Basic", "Side Basic Step", "Back Basic Step", "Cross Body Lead", "Right Turn", "Left Turn", "Suzie Q", "Copa", "Dile Que No", "Shines"],
+    "Samba": ["Samba Basic Step", "Samba Bounce", "Botafogos", "Voltas", "Whisks", "Samba Roll", "Cortaca", "Cruzados", "Promenade Runs", "Stationary Samba Walk"],
+    "Swing": ["Basic 6-Count Step", "Basic 8-Count Step", "Rock Step", "Triple Step", "Underarm Turn", "Tuck Turn", "Change of Places", "Whip", "Kick Ball Change", "Sugar Push"],
+    "Tango": ["Tango Basic Walk", "Corte", "Ocho", "Ganchos", "BoLeo", "Sacada", "Giros", "Promenade Link", "Rock Turn", "Molinete"],
+    "Tap": ["Shuffle", "Flap", "Time Step", "Cramproll", "Ball Change", "Maxie Ford", "Buffalo", "Drawback", "Paradiddle", "Wing"],
+    "Tribal Fusion": ["Snake Arms", "Chest Isolation Circle", "Hip Locks", "Body Waves", "Shimmy Locks", "Pelvic Tilts", "Pops and Locks", "Undulations", "Torso Figure-8", "Camel Walk"],
+    "Tutting": ["Wrist Tutting", "Elbow 90-Degree Box", "Finger Tutting", "King Tut Stance", "Box Rotation", "Prayer Hands Transition", "Angle Wave", "Hand Slide", "Digital Cascade", "Fixation Freeze"],
+    "Vogue / Voguing": ["Duckwalk", "Catwalk", "Dip (Death Drop)", "Hands Performance", "Spin and Dip", "Floorwork", "Posing", "Arm Control", "Hair Flip", "Duckwalk Roll"],
+    "Waltz": ["Waltz Box Step", "Forward Progress Walk", "Natural Turn", "Reverse Turn", "Whisk", "Chassé from Promenade", "Hesitation Step", "Open Impetus", "Hover Corte", "Spin Turn"],
+    "Waacking": ["Arm Whacks", "Posing", "Punking", "Hand Rolls", "Chest Pop", "Dramatic Footwork Strut", "Shoulder Rolls", "Arm Extensions", "Overhead Whip", "Freeze Pose"],
+    "Other": ["Basic Step", "Isolation", "Turn", "Jump", "Slide", "Pivot", "Wave", "Bounce", "Freeze", "Pose"]
+}
+
+@st.cache_data
+def build_all_dance_moves_database():
+    db = {}
+    for style, moves in MOVES_RAW.items():
+        style_moves = []
+        for idx, m_name in enumerate(moves, 1):
+            style_moves.append({
+                "name": f"{idx}. {m_name}",
+                "description": f"A core movement in {style} focusing on rhythm, body control, and stylistic posture.",
+                "how_to": f"1. Begin in balanced stance.\n2. Initiate {m_name} on count 1.\n3. Coordinate arms and core alignment.\n4. Execute smoothly through count 8."
+            })
+        db[style] = style_moves
+    return db
+
+DANCE_MOVES_DATABASE = build_all_dance_moves_database()
 
 # INITIALIZE SESSION STATE
 defaults = {
@@ -491,7 +608,7 @@ if st.session_state.active_section == "studio":
                 st.rerun()
 
     st.divider()
-    user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user"] == st.session_state.user_email]
+    user_choreo_items = [x for x in vault_db_items if x.get("type") == "choreo" and x.get("user") == st.session_state.user_email]
     events = [{"id": i["id"], "title": i["piece"], "start": i["date"]} for i in user_choreo_items]
     cal_response = calendar(events=events, options=calendar_options, key="choreo_cal")
     
@@ -582,6 +699,22 @@ elif st.session_state.active_section == "pain":
                 "contrast": "Apply ice for 10-15 minutes immediately after rehearsals.",
                 "posture": "Use cushioned arch support slides or orthopedic insoles between rehearsals.",
                 "prevention": "Perform calf Eccentric Heel Drops off a step."
+            },
+            "Achilles / Calf": {
+                "mechanism": "Repetitive jumps, releve overload, and sudden landing impacts.",
+                "img": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra.png",
+                "myofascial": "Use a high-density foam roller along the gastrocnemius.",
+                "contrast": "Apply moist heat before class and ice post-practice.",
+                "posture": "Wear supportive sneakers with a slight heel drop during non-dance hours.",
+                "prevention": "Focus on controlled plié depth during landings."
+            },
+            "Lower Back": {
+                "mechanism": "Postural holding strain and core fatigue.",
+                "img": f"{RAW_BASE}/Agent%20Image%20-%20Design%20a%20clean%20vertical%20step-by-step%20wellness%20infographic%20matching%20the%20layout_%20typogra%20(1).png",
+                "myofascial": "Place a soft massage ball under the gluteus medius.",
+                "contrast": "Use gentle heating pads for 15 minutes before bedtime.",
+                "posture": "Ensure non-dance footwear has adequate shock absorption.",
+                "prevention": "Engage deep core activation during back cambré."
             }
         }
         selected_area = st.selectbox("Select Area of Tension:", list(recovery_guides.keys()))
@@ -595,6 +728,7 @@ elif st.session_state.active_section == "pain":
                     <p><b>Myofascial Release:</b><br>{info['myofascial']}</p>
                     <p><b>Heat & Ice:</b><br>{info['contrast']}</p>
                     <p><b>Posture:</b><br>{info['posture']}</p>
+                    <p><b>Prevention:</b><br>{info['prevention']}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
